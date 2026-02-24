@@ -5,8 +5,9 @@
  * Cambios aplicados:
  * - Eliminado soporte de modo oscuro (prefers-color-scheme: dark)
  * - Eliminadas cabeceras/fondos oscuros (badges dark ahora son claros)
- * - Suavizados colores “casi negros” en totales/monetarios y tfoot
- * - Montos SIN tipografía mono “vieja”: ahora usan sans moderno con tabular-nums
+ * - Suavizados colores "casi negros" en totales/monetarios y tfoot
+ * - Montos SIN tipografía mono "vieja": ahora usan sans moderno con tabular-nums
+ * - Reportes contables (balance, libro mayor, etc.) excluidos del tema
  */
 
 // ─── Variables ───────────────────────────────────────────────────────────────
@@ -30,7 +31,7 @@
     --mlv-border-header:  #c8cfe0;
     --mlv-border-radius:  10px;
 
-    // Texto — alto contraste pero sin “negros”
+    // Texto — alto contraste pero sin "negros"
     --mlv-text-header:     #1f2937;
     --mlv-text-cell:       #27324a;
     --mlv-text-muted:      #353535;
@@ -277,7 +278,7 @@
                     text-align: right;
                     font-variant-numeric: tabular-nums;
                     font-family: var(--mlv-font-numeric); // <- ya NO es mono
-                    font-size: 0.88rem;                   // ligeramente más “premium”
+                    font-size: 0.88rem;                   // ligeramente más "premium"
                     font-weight: 600;
                     color: #1e293b;
                 }
@@ -423,8 +424,6 @@
     }
 }
 
-
-
 // ─── Lista embebida en formulario (one2many/editable) ─────────────────────
 .o_form_view .o_field_one2many .o_list_renderer table.o_list_table,
 .o_form_view .o_field_widget .o_list_renderer table.o_list_table {
@@ -439,4 +438,32 @@
     box-shadow: none;
     border: 1px solid var(--mlv-border-color);
     border-radius: var(--mlv-border-radius);
+}
+
+// ─── Reportes contables — resetear estilos del tema ──────────────────────────
+// Balance de cuenta, libro mayor, estado de resultados, etc.
+.o_account_reports_page,
+.o_account_report,
+.o_account_financial_report,
+.o_account_report_line,
+[class*="account_report"] {
+
+    table.o_list_table {
+        min-width: unset !important;
+        width: 100% !important;
+        table-layout: auto !important;
+
+        thead tr th,
+        tbody tr td,
+        tfoot tr td {
+            white-space: normal !important;
+            overflow: visible !important;
+            text-overflow: unset !important;
+        }
+    }
+
+    .o_list_renderer {
+        overflow-x: hidden !important;
+        box-shadow: none !important;
+    }
 }

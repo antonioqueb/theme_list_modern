@@ -8,15 +8,24 @@
  *  - Tooltips en celdas truncadas (solo cuando la celda sí está truncada)
  *  - Sin measureText hacky — dejamos que el browser calcule anchos reales
  *  - Listas embebidas en formularios (one2many/many2many) quedan excluidas
+ *  - Reportes contables (balance, libro mayor, etc.) quedan excluidos
  */
 import { patch } from "@web/core/utils/patch";
 import { ListRenderer } from "@web/views/list/list_renderer";
 import { onMounted, onPatched } from "@odoo/owl";
 
-// ─── Detectar lista embebida en formulario ────────────────────────────────────
+// ─── Detectar lista embebida en formulario o reporte contable ─────────────────
 function isEmbeddedList(tableEl) {
     return !!tableEl.closest(
-        ".o_form_view .o_field_one2many, .o_form_view .o_field_many2many, .o_form_view .o_field_widget .o_list_renderer"
+        ".o_form_view .o_field_one2many, " +
+        ".o_form_view .o_field_many2many, " +
+        ".o_form_view .o_field_widget .o_list_renderer, " +
+        ".o_account_reports_page, " +
+        ".o_account_report, " +
+        ".o_account_financial_report, " +
+        ".o_account_report_line, " +
+        "[class*='account_report'], " +
+        ".o_report_layout"
     );
 }
 
