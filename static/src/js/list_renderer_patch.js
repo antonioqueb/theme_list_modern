@@ -14,12 +14,14 @@ import { patch } from "@web/core/utils/patch";
 import { ListRenderer } from "@web/views/list/list_renderer";
 import { onMounted, onPatched } from "@odoo/owl";
 
-// ─── Detectar lista embebida en formulario o reporte contable ─────────────────
+// ─── Detectar tabla que NO debe ser afectada por el tema ─────────────────────
 function isEmbeddedList(tableEl) {
     return !!tableEl.closest(
         ".o_form_view .o_field_one2many, " +
         ".o_form_view .o_field_many2many, " +
         ".o_form_view .o_field_widget .o_list_renderer, " +
+        // Reportes contables: el contenedor real del HTML generado por account_reports
+        ".o_account_report_scroll_container, " +
         ".o_account_reports_page, " +
         ".o_account_report, " +
         ".o_account_financial_report, " +

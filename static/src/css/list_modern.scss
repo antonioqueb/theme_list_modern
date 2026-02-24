@@ -441,17 +441,20 @@
 }
 
 // ─── Reportes contables — resetear estilos del tema ──────────────────────────
-// Balance de cuenta, libro mayor, estado de resultados, etc.
+// El HTML real usa .o_account_report_scroll_container > table.table (NO .o_list_table)
+// Aplica reset completo para que ningún estilo del tema los afecte.
+.o_account_report_scroll_container,
 .o_account_reports_page,
 .o_account_report,
-.o_account_financial_report,
-.o_account_report_line,
-[class*="account_report"] {
+.o_account_financial_report {
 
-    table.o_list_table {
+    table {
         min-width: unset !important;
-        width: 100% !important;
+        width: auto !important;
+        max-width: 100% !important;
         table-layout: auto !important;
+        font-family: inherit !important;
+        font-size: inherit !important;
 
         thead tr th,
         tbody tr td,
@@ -459,11 +462,39 @@
             white-space: normal !important;
             overflow: visible !important;
             text-overflow: unset !important;
+            padding: inherit !important;
+            font-size: inherit !important;
+            font-weight: inherit !important;
+            font-variant-numeric: inherit !important;
+            color: inherit !important;
+            background: inherit !important;
+            border-bottom: inherit !important;
+            letter-spacing: inherit !important;
+            text-transform: inherit !important;
+            vertical-align: middle !important;
         }
     }
 
     .o_list_renderer {
         overflow-x: hidden !important;
         box-shadow: none !important;
+    }
+}
+
+// ─── Fix centrado del contenedor de reportes contables ────────────────────────
+// .fit-content + .mx-auto es el patrón que Odoo usa para centrar la tabla del reporte.
+// Aseguramos que nada del tema lo fuerce a ancho completo o lo desplace.
+.o_account_report_scroll_container {
+    display: block !important;
+    width: fit-content !important;
+    max-width: 100% !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    overflow-x: auto !important;
+
+    > div {
+        display: flex !important;
+        align-items: flex-start !important;
+        justify-content: center !important;
     }
 }
