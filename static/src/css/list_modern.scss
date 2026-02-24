@@ -423,3 +423,20 @@
     }
 }
 
+
+
+// ─── Lista embebida en formulario (one2many/editable) ─────────────────────
+.o_form_view .o_field_one2many .o_list_renderer table.o_list_table,
+.o_form_view .o_field_widget .o_list_renderer table.o_list_table {
+    min-width: unset;
+    width: 100%;
+    table-layout: fixed;
+}
+
+.o_form_view .o_field_one2many .o_list_renderer,
+.o_form_view .o_field_widget .o_list_renderer {
+    overflow-x: hidden;
+    box-shadow: none;
+    border: 1px solid var(--mlv-border-color);
+    border-radius: var(--mlv-border-radius);
+}
