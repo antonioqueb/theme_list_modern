@@ -1,77 +1,49 @@
 /**
- * Modern List View Theme - ListRenderer Patch
+ * Modern List View Theme v2 - ListRenderer Patch
  * Alphaqueb Consulting SAS
  *
- * Extiende el ListRenderer de Odoo 19 para:
- *  1. Auto-expandir todas las columnas para mostrar el nombre completo del header
- *  2. Sincronizar anchos de columna con el contenido del header
- *  3. Añadir clase `.mlv-active` al montar para activar transiciones
- *  4. Tooltips en celdas truncadas
+ * Estrategia v2:
+ *  - table-layout: auto + min-width: max-content forzado vía JS
+ *  - El contenedor scrollea horizontalmente, la tabla nunca comprime columnas
+ *  - Tooltips en celdas truncadas (solo cuando la celda sí está truncada)
+ *  - Sin measureText hacky — dejamos que el browser calcule anchos reales
  */
 
 import { patch } from "@web/core/utils/patch";
 import { ListRenderer } from "@web/views/list/list_renderer";
-import { onMounted, onPatched, useRef } from "@odoo/owl";
+import { onMounted, onPatched } from "@odoo/owl";
 
-// ─── Utilidades ──────────────────────────────────────────────────────────────
-
-/**
- * Mide el ancho natural de un texto en una fuente/tamaño específico.
- * Usa un canvas offscreen para no afectar el DOM.
- */
-const _canvas = document.createElement("canvas");
-const _ctx = _canvas.getContext("2d");
-
-function measureText(text, font = "650 0.72rem/1 'DM Sans', system-ui, sans-serif") {
-    _ctx.font = font;
-    return _ctx.measureText(text).width;
-}
-
-/**
- * Asegura que el th tenga al menos el ancho necesario para mostrar
- * el texto completo del header sin corte.
- */
-function expandHeaders(tableEl) {
+// ─── Forzar tabla no comprimida ───────────────────────────────────────────────
+function enforceTableExpansion(tableEl) {
     if (!tableEl) return;
 
-    const ths = tableEl.querySelectorAll("thead th");
-    ths.forEach((th) => {
-        // Obtener el texto visible del header
-        const titleEl = th.querySelector(
-            ".o_list_column_title, .o_column_title, span, div"
-        );
-        const text = titleEl ? titleEl.textContent.trim() : th.textContent.trim();
-        if (!text) return;
+    // Tabla: auto layout, nunca comprimir
+    tableEl.style.tableLayout = "auto";
+    tableEl.style.minWidth = "max-content";
+    tableEl.style.width = "100%";
 
-        // Ancho del texto + padding + separador + posible sort icon
-        const textWidth = measureText(text.toUpperCase()); // uppercase por CSS
-        const paddingH = 14 * 2; // --mlv-cell-px * 2
-        const extras = 24; // sort icon + separador
-        const minWidth = Math.ceil(textWidth * 1.15 + paddingH + extras); // 1.15 = factor letter-spacing
-
-        // Solo expandir, nunca reducir
-        const current = th.offsetWidth;
-        if (minWidth > current) {
-            th.style.minWidth = `${minWidth}px`;
-        }
-
-        // No permitir que el header se corte
+    // Todos los th: no truncar nunca
+    tableEl.querySelectorAll("thead th").forEach((th) => {
         th.style.whiteSpace = "nowrap";
         th.style.overflow = "visible";
+        th.style.textOverflow = "clip";
+    });
+
+    // Celdas de datos: white-space nowrap para que el contenido dicte el ancho
+    // Quitamos max-width:0 que causaba truncado forzado
+    tableEl.querySelectorAll("tbody td:not(.o_list_record_selector)").forEach((td) => {
+        td.style.whiteSpace = "nowrap";
+        td.style.maxWidth = "";   // eliminar cualquier max-width heredado
     });
 }
 
-/**
- * Añade tooltip nativo a celdas truncadas.
- */
+// ─── Tooltips en celdas truncadas ────────────────────────────────────────────
 function addCellTooltips(tableEl) {
     if (!tableEl) return;
 
-    const cells = tableEl.querySelectorAll("tbody td:not(.o_list_record_selector)");
-    cells.forEach((td) => {
-        if (td._mlvTooltipBound) return;
-        td._mlvTooltipBound = true;
-
+    tableEl.querySelectorAll("tbody td:not(.o_list_record_selector)").forEach((td) => {
+        if (td._mlvTip) return;
+        td._mlvTip = true;
         td.addEventListener("mouseenter", () => {
             if (td.scrollWidth > td.clientWidth + 2) {
                 td.setAttribute("title", td.textContent.trim());
@@ -82,78 +54,43 @@ function addCellTooltips(tableEl) {
     });
 }
 
-/**
- * Añade clase de activación al renderer para permitir transiciones CSS.
- */
-function activateRenderer(el) {
-    if (!el) return;
-    requestAnimationFrame(() => {
-        el.classList.add("mlv-active");
-    });
-}
-
 // ─── Patch al ListRenderer ────────────────────────────────────────────────────
 patch(ListRenderer.prototype, {
     setup() {
         super.setup(...arguments);
 
-        // Ref al elemento raíz del renderer
-        this.mlvTableRef = useRef("table");
-        this.mlvRootRef = useRef("root");
-
-        const applyEnhancements = () => {
-            const tableEl = this.mlvTableRef?.el || this.el?.querySelector("table.o_list_table");
-            const rootEl = this.mlvRootRef?.el || this.el;
-
+        const apply = () => {
+            // Buscar la tabla dentro del componente
+            const tableEl = this.el?.querySelector("table.o_list_table");
             if (tableEl) {
-                expandHeaders(tableEl);
+                enforceTableExpansion(tableEl);
                 addCellTooltips(tableEl);
-            }
-            if (rootEl) {
-                activateRenderer(rootEl);
             }
         };
 
-        onMounted(() => {
-            applyEnhancements();
-        });
-
-        onPatched(() => {
-            // Pequeño delay para que OWL termine el render del DOM
-            setTimeout(applyEnhancements, 0);
-        });
+        onMounted(() => apply());
+        onPatched(() => setTimeout(apply, 0));
     },
 });
 
-// ─── ResizeObserver global para tablas de lista ───────────────────────────────
-// Cuando el viewport cambia, re-aplicar anchos mínimos
-const _listObserver = new ResizeObserver(() => {
-    document.querySelectorAll(".o_list_table").forEach(expandHeaders);
-});
-
-// Observar el body para capturar cualquier tabla que aparezca
-const _mutationObserver = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-        mutation.addedNodes.forEach((node) => {
-            if (node.nodeType !== Node.ELEMENT_NODE) return;
+// ─── MutationObserver global — captura tablas que entren al DOM ───────────────
+const _mo = new MutationObserver((mutations) => {
+    for (const m of mutations) {
+        for (const node of m.addedNodes) {
+            if (node.nodeType !== Node.ELEMENT_NODE) continue;
 
             const tables = node.classList?.contains("o_list_table")
                 ? [node]
-                : node.querySelectorAll?.(".o_list_table") || [];
+                : [...(node.querySelectorAll?.(".o_list_table") || [])];
 
-            tables.forEach((table) => {
-                expandHeaders(table);
-                addCellTooltips(table);
-                _listObserver.observe(table.closest(".o_list_view") || table);
-            });
-        });
-    });
+            for (const t of tables) {
+                enforceTableExpansion(t);
+                addCellTooltips(t);
+            }
+        }
+    }
 });
 
-// Iniciar observación cuando el DOM esté listo
 document.addEventListener("DOMContentLoaded", () => {
-    _mutationObserver.observe(document.body, {
-        childList: true,
-        subtree: true,
-    });
+    _mo.observe(document.body, { childList: true, subtree: true });
 }, { once: true });

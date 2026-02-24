@@ -1,88 +1,101 @@
 /**
- * Modern List View Theme - Odoo 19
+ * Modern List View Theme v2 - Odoo 19
  * Alphaqueb Consulting SAS
  *
- * Sobreescribe globalmente el diseño de todas las vistas de lista
- * sin modificar ningún XML. Estética: refinada, limpia, moderna 2026.
+ * v2 changes:
+ *  - Cabecera: fondo nativo (blanco), sin gris oscuro
+ *  - Tabla: table-layout auto + min-width en contenedor → siempre muestra todo
+ *  - Filas: más altura y padding
+ *  - Tags/badges: paleta vibrante con colores por tipo
+ *  - Texto: mayor contraste
  */
 
-// ─── Variables de diseño ─────────────────────────────────────────────────────
+// ─── Variables ───────────────────────────────────────────────────────────────
 :root {
-    --mlv-font-base: 'Geist', 'DM Sans', 'Inter', system-ui, sans-serif;
-    --mlv-font-mono: 'Geist Mono', 'JetBrains Mono', monospace;
+    --mlv-font-base:  'DM Sans', 'Inter', system-ui, sans-serif;
+    --mlv-font-mono:  'JetBrains Mono', 'Courier New', monospace;
 
-    // Superficie y fondos
-    --mlv-bg-table:         #ffffff;
-    --mlv-bg-header:        #f8f8f8;
-    --mlv-bg-row:           #ffffff;
-    --mlv-bg-row-alt:       #fafafa;
-    --mlv-bg-row-hover:     #f4f6fa;
-    --mlv-bg-row-selected:  #eef2ff;
-    --mlv-bg-row-selected-hover: #e5eaff;
+    // Fondos — header hereda el blanco nativo
+    --mlv-bg-table:              #ffffff;
+    --mlv-bg-header:             #ffffff;   // ← blanco nativo, sin gris
+    --mlv-bg-row:                #ffffff;
+    --mlv-bg-row-alt:            #f9fafc;
+    --mlv-bg-row-hover:          #f0f4ff;
+    --mlv-bg-row-selected:       #e8eeff;
+    --mlv-bg-row-selected-hover: #dde5ff;
 
     // Bordes
-    --mlv-border-color:     #e8e8ec;
-    --mlv-border-header:    #d0d0d8;
-    --mlv-border-radius:    10px;
+    --mlv-border-color:   #e4e7ef;
+    --mlv-border-header:  #c8cfe0;   // línea inferior de cabecera — ligeramente más visible
+    --mlv-border-radius:  10px;
 
     // Texto
-    --mlv-text-header:      #1a1a2e;
-    --mlv-text-cell:        #2d2d3a;
-    --mlv-text-muted:       #8888a0;
-    --mlv-text-link:        #4361ee;
-    --mlv-text-link-hover:  #2541c4;
+    --mlv-text-header:    #111827;   // casi negro — máximo contraste
+    --mlv-text-cell:      #1e2433;   // oscuro
+    --mlv-text-muted:     #6b7280;
+    --mlv-text-link:      #3b5bdb;
+    --mlv-text-link-hover:#1d3cb8;
 
-    // Acento / selección
-    --mlv-accent:           #4361ee;
-    --mlv-accent-soft:      rgba(67, 97, 238, 0.08);
+    // Acento
+    --mlv-accent:         #3b5bdb;
+    --mlv-accent-soft:    rgba(59, 91, 219, 0.08);
 
     // Checkbox
-    --mlv-check-border:     #c0c0cc;
-    --mlv-check-checked-bg: #4361ee;
+    --mlv-check-border:     #9ca3af;
+    --mlv-check-checked-bg: #3b5bdb;
 
     // Sombras
-    --mlv-shadow-table:     0 1px 3px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.04);
-    --mlv-shadow-header:    0 1px 0 var(--mlv-border-color);
+    --mlv-shadow-table: 0 1px 2px rgba(0,0,0,.05), 0 4px 20px rgba(0,0,0,.05);
 
-    // Transiciones
-    --mlv-transition:       150ms ease;
+    // Transición
+    --mlv-transition: 140ms ease;
 
     // Tipografía
-    --mlv-header-size:      0.72rem;
-    --mlv-cell-size:        0.855rem;
-    --mlv-header-weight:    650;
-    --mlv-cell-weight:      400;
+    --mlv-header-size:   0.73rem;
+    --mlv-cell-size:     0.875rem;
+    --mlv-header-weight: 700;
 
-    // Espaciado
-    --mlv-cell-px:          14px;
-    --mlv-cell-py:          10px;
-    --mlv-header-py:        11px;
+    // Espaciado — más generoso
+    --mlv-cell-px:    18px;
+    --mlv-cell-py:    14px;   // ← aumentado para más altura de fila
+    --mlv-header-py:  13px;
 
-    // Row height
-    --mlv-row-height:       44px;
+    // Row height mínima
+    --mlv-row-height: 52px;   // ← más alto
 }
 
-// ─── Contenedor principal de la vista de lista ───────────────────────────────
+// ─── Contenedor ──────────────────────────────────────────────────────────────
 .o_list_view {
     background: transparent;
     border: none;
-    border-radius: var(--mlv-border-radius);
-    overflow: hidden;
 
-    // Sombra sutil en el contenedor de la tabla
     .o_list_renderer,
     > .o_list_renderer {
         background: var(--mlv-bg-table);
         border: 1px solid var(--mlv-border-color);
         border-radius: var(--mlv-border-radius);
         box-shadow: var(--mlv-shadow-table);
-        overflow: hidden;
+        // ← overflow-x: auto permite scroll horizontal cuando la tabla es > viewport
+        overflow-x: auto;
+        overflow-y: visible;
+
+        &::-webkit-scrollbar { height: 6px; width: 6px; }
+        &::-webkit-scrollbar-track { background: transparent; }
+        &::-webkit-scrollbar-thumb {
+            background: #d1d5e0;
+            border-radius: 10px;
+            &:hover { background: #a0a8c0; }
+        }
     }
 }
 
 // ─── Tabla ───────────────────────────────────────────────────────────────────
 .o_list_view table.o_list_table,
 .o_list_renderer table.o_list_table {
+    // table-layout: auto → el navegador calcula anchos según contenido real
+    // min-width: max-content → la tabla nunca se comprime; el contenedor scrollea
+    table-layout: auto;
+    min-width: max-content;
     width: 100%;
     border-collapse: collapse;
     border-spacing: 0;
@@ -91,210 +104,210 @@
     color: var(--mlv-text-cell);
     background: var(--mlv-bg-table);
 
-    // ─── THEAD / Cabeceras ────────────────────────────────────────────────
+    // ─── THEAD ───────────────────────────────────────────────────────────
     thead {
         position: sticky;
         top: 0;
         z-index: 10;
-        background: var(--mlv-bg-header);
 
-        tr {
-            th {
-                background: var(--mlv-bg-header);
-                color: var(--mlv-text-header);
-                font-size: var(--mlv-header-size);
-                font-weight: var(--mlv-header-weight);
-                letter-spacing: 0.04em;
-                text-transform: uppercase;
-                padding: var(--mlv-header-py) var(--mlv-cell-px);
-                border-bottom: 1px solid var(--mlv-border-header);
-                border-right: none;
-                white-space: nowrap;           // ← evita que las cabeceras se corten
-                overflow: visible;
-                vertical-align: middle;
-                cursor: default;
-                transition: background var(--mlv-transition), color var(--mlv-transition);
-                position: relative;
+        tr th {
+            background: var(--mlv-bg-header);   // blanco nativo
+            color: var(--mlv-text-header);
+            font-size: var(--mlv-header-size);
+            font-weight: var(--mlv-header-weight);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            padding: var(--mlv-header-py) var(--mlv-cell-px);
+            border-bottom: 2px solid var(--mlv-border-header);
+            border-right: none;
+            white-space: nowrap;    // cabeceras siempre en una línea
+            overflow: visible;
+            vertical-align: middle;
+            cursor: default;
+            transition: color var(--mlv-transition);
+            position: relative;
 
-                // Separador vertical sutil entre columnas
-                &:not(:last-child)::after {
-                    content: '';
-                    position: absolute;
-                    right: 0;
-                    top: 20%;
-                    height: 60%;
-                    width: 1px;
-                    background: var(--mlv-border-color);
+            // Separador vertical entre columnas
+            &:not(:last-child)::after {
+                content: '';
+                position: absolute;
+                right: 0; top: 25%; height: 50%;
+                width: 1px;
+                background: var(--mlv-border-color);
+            }
+
+            // Columna ordenable
+            &.o_column_sortable {
+                cursor: pointer;
+                user-select: none;
+
+                .o_list_column_title {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 4px;
+                    transition: color var(--mlv-transition);
                 }
 
-                // Columna ordenable
-                &.o_column_sortable {
-                    cursor: pointer;
-
-                    .o_list_column_title {
-                        display: inline-flex;
-                        align-items: center;
-                        gap: 5px;
-                        transition: color var(--mlv-transition);
-                    }
-
-                    &:hover {
-                        background: darken(#f8f8f8, 2%);
-                        color: var(--mlv-accent);
-
-                        .o_list_column_title {
-                            color: var(--mlv-accent);
-                        }
-                    }
-
-                    // Icono de sort
-                    .o_sort_up::before {
-                        content: '↑';
-                        font-size: 0.7rem;
-                        color: var(--mlv-accent);
-                        margin-left: 2px;
-                    }
-                    .o_sort_down::before {
-                        content: '↓';
-                        font-size: 0.7rem;
-                        color: var(--mlv-accent);
-                        margin-left: 2px;
-                    }
-                }
-
-                // Checkbox header
-                &.o_list_record_selector,
-                &.o_list_selection_box {
-                    width: 40px;
-                    min-width: 40px;
-                    max-width: 40px;
-                    text-align: center;
-                    padding: var(--mlv-header-py) 8px;
-                }
-
-                // Columna de acciones/opcionales
-                &.o_list_optional_columns_dropdown {
-                    width: 36px;
-                    min-width: 36px;
-                    text-align: center;
-                    padding: var(--mlv-header-py) 8px;
-                }
-
-                // Ícono FA en cabeceras
-                i.fa {
-                    font-size: 0.75rem;
-                    color: var(--mlv-text-muted);
+                &:hover {
+                    color: var(--mlv-accent);
+                    .o_list_column_title { color: var(--mlv-accent); }
                 }
             }
+
+            // Checkbox / selector
+            &.o_list_record_selector,
+            &.o_list_selection_box {
+                width: 44px; min-width: 44px; max-width: 44px;
+                text-align: center;
+                padding: var(--mlv-header-py) 8px;
+            }
+
+            // Columna de opcionales
+            &.o_list_optional_columns_dropdown {
+                width: 38px; min-width: 38px;
+                text-align: center;
+                padding: var(--mlv-header-py) 6px;
+            }
+
+            i.fa { font-size: 0.75rem; color: var(--mlv-text-muted); }
         }
     }
 
-    // ─── TBODY / Filas ────────────────────────────────────────────────────
+    // ─── TBODY ───────────────────────────────────────────────────────────
     tbody {
         tr.o_data_row {
-            height: var(--mlv-row-height);
+            min-height: var(--mlv-row-height);
             background: var(--mlv-bg-row);
             transition: background var(--mlv-transition);
             border-bottom: 1px solid var(--mlv-border-color);
 
-            &:nth-child(even) {
-                background: var(--mlv-bg-row-alt);
-            }
+            &:nth-child(even) { background: var(--mlv-bg-row-alt); }
+            &:last-child { border-bottom: none; }
 
-            &:last-child {
-                border-bottom: none;
-            }
-
-            // Hover
             &:not(.o_selected_row):hover {
                 background: var(--mlv-bg-row-hover);
-
-                td {
-                    color: var(--mlv-text-cell);
-                }
             }
 
-            // Fila seleccionada
             &.o_selected_row {
                 background: var(--mlv-bg-row-selected);
                 box-shadow: inset 3px 0 0 var(--mlv-accent);
-
-                &:hover {
-                    background: var(--mlv-bg-row-selected-hover);
-                }
+                &:hover { background: var(--mlv-bg-row-selected-hover); }
             }
 
-            // Fila en edición
             &.o_is_dirty {
                 box-shadow: inset 3px 0 0 #f97316;
-                background: #fffbf7;
+                background: #fff8f4;
             }
 
-            // Celdas
             td {
                 padding: var(--mlv-cell-py) var(--mlv-cell-px);
-                border-right: none;
                 vertical-align: middle;
                 font-size: var(--mlv-cell-size);
                 color: var(--mlv-text-cell);
                 white-space: nowrap;
+
+                // Celdas de datos: dejar que la tabla decida el ancho (table-layout auto)
+                // No ponemos max-width: 0 para que el contenido no se trunque
                 overflow: hidden;
                 text-overflow: ellipsis;
-                max-width: 0;                  // permite text-overflow en celdas flex
 
-                // Checkbox cel
                 &.o_list_record_selector {
-                    width: 40px;
-                    min-width: 40px;
-                    max-width: 40px;
+                    width: 44px; min-width: 44px; max-width: 44px;
                     text-align: center;
                     padding: var(--mlv-cell-py) 8px;
                 }
 
-                // Campo tipo many2one / link
+                // Links / many2one
                 a, .o_form_uri {
                     color: var(--mlv-text-link);
                     text-decoration: none;
                     font-weight: 500;
                     transition: color var(--mlv-transition);
-
                     &:hover {
                         color: var(--mlv-text-link-hover);
                         text-decoration: underline;
                     }
                 }
 
-                // Badges / etiquetas de estado
-                .badge,
-                .o_tag {
-                    font-size: 0.68rem;
-                    font-weight: 600;
-                    letter-spacing: 0.03em;
-                    padding: 2px 8px;
+                // ─── BADGES Y TAGS — paleta vibrante ─────────────────────
+                // Odoo usa .badge + clases de color tipo text-bg-success, etc.
+                // También .o_tag con color inline. Mejoramos los estilos base.
+
+                .badge {
+                    font-size: 0.7rem;
+                    font-weight: 700;
+                    letter-spacing: 0.04em;
+                    padding: 3px 10px;
                     border-radius: 20px;
                     border: none;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 4px;
+                    line-height: 1.4;
                 }
 
-                // Campos monetarios / numéricos → alineados derecha
+                // Colores vibrantes para cada variante de Bootstrap badge
+                .badge.text-bg-success, .badge.bg-success  { background: #dcfce7 !important; color: #15803d !important; }
+                .badge.text-bg-danger,  .badge.bg-danger   { background: #fee2e2 !important; color: #b91c1c !important; }
+                .badge.text-bg-warning, .badge.bg-warning  { background: #fef9c3 !important; color: #a16207 !important; }
+                .badge.text-bg-info,    .badge.bg-info     { background: #dbeafe !important; color: #1d4ed8 !important; }
+                .badge.text-bg-primary, .badge.bg-primary  { background: #e0e7ff !important; color: #3730a3 !important; }
+                .badge.text-bg-secondary,.badge.bg-secondary{ background: #f3f4f6 !important; color: #374151 !important; }
+                .badge.text-bg-dark,    .badge.bg-dark     { background: #1f2937 !important; color: #f9fafb !important; }
+                .badge.text-bg-light,   .badge.bg-light    { background: #f8fafc !important; color: #475569 !important; border: 1px solid #e2e8f0 !important; }
+
+                // .o_tag — chip de many2many tags
+                .o_tag {
+                    font-size: 0.72rem;
+                    font-weight: 650;
+                    letter-spacing: 0.03em;
+                    padding: 2px 10px;
+                    border-radius: 20px;
+                    border: none;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 3px;
+                    line-height: 1.5;
+
+                    // Si no tiene color Odoo, aplicar default
+                    &:not([style*="background"]) {
+                        background: #e0e7ff;
+                        color: #3730a3;
+                    }
+                }
+
+                // Estado de Odoo .o_field_status_bar / .o_status (kanban state)
+                .o_status {
+                    width: 12px; height: 12px;
+                    border-radius: 50%;
+                    display: inline-block;
+                    box-shadow: 0 0 0 2px rgba(0,0,0,.08);
+                    &.o_status_green  { background: #22c55e; }
+                    &.o_status_red    { background: #ef4444; }
+                    &.o_status_grey   { background: #d1d5db; }
+                }
+
+                // Numéricos y monetarios
                 &.o_monetary_cell,
                 &.o_integer_cell,
                 &.o_float_cell {
                     text-align: right;
                     font-variant-numeric: tabular-nums;
                     font-family: var(--mlv-font-mono);
-                    font-size: 0.83rem;
+                    font-size: 0.84rem;
+                    font-weight: 500;
+                    color: #0f172a;
                 }
 
-                // Campos boolean (checkbox)
+                // Boolean
                 .o_field_boolean .o_checkbox,
                 .o_field_boolean input[type="checkbox"] {
                     accent-color: var(--mlv-accent);
-                    width: 15px;
-                    height: 15px;
+                    width: 15px; height: 15px;
                     cursor: default;
                 }
 
-                // Botones de acción en celdas
+                // Acciones inline — visibles en hover
                 .o_list_record_remove,
                 .o_btn_list_action {
                     opacity: 0;
@@ -303,188 +316,109 @@
             }
 
             &:hover td .o_list_record_remove,
-            &:hover td .o_btn_list_action {
-                opacity: 1;
-            }
+            &:hover td .o_btn_list_action { opacity: 1; }
         }
 
-        // Fila "New" / agregar registro
         tr.o_list_add_record td {
-            padding: 8px var(--mlv-cell-px);
+            padding: 10px var(--mlv-cell-px);
             font-size: var(--mlv-cell-size);
         }
 
-        // Fila vacía / sin registros
-        tr.o_list_no_content_helper,
-        .o_nocontent_help {
-            td {
-                padding: 48px var(--mlv-cell-px);
-                text-align: center;
-                color: var(--mlv-text-muted);
-                font-size: 0.9rem;
-            }
+        tr.o_list_no_content_helper td,
+        .o_nocontent_help td {
+            padding: 56px var(--mlv-cell-px);
+            text-align: center;
+            color: var(--mlv-text-muted);
+            font-size: 0.9rem;
         }
     }
 
-    // ─── TFOOT / Totales ──────────────────────────────────────────────────
-    tfoot {
-        tr {
-            border-top: 2px solid var(--mlv-border-header);
-            background: var(--mlv-bg-header);
+    // ─── TFOOT ───────────────────────────────────────────────────────────
+    tfoot tr {
+        border-top: 2px solid var(--mlv-border-header);
+        background: #f8fafc;
 
-            td {
-                padding: var(--mlv-cell-py) var(--mlv-cell-px);
-                font-weight: 650;
-                font-size: var(--mlv-cell-size);
-                font-variant-numeric: tabular-nums;
-                font-family: var(--mlv-font-mono);
-                color: var(--mlv-text-header);
-            }
+        td {
+            padding: var(--mlv-cell-py) var(--mlv-cell-px);
+            font-weight: 700;
+            font-size: var(--mlv-cell-size);
+            font-variant-numeric: tabular-nums;
+            font-family: var(--mlv-font-mono);
+            color: #0f172a;
         }
     }
 }
 
-// ─── Checkboxes globales ──────────────────────────────────────────────────────
-.o_list_view {
-    input[type="checkbox"] {
-        appearance: none;
-        -webkit-appearance: none;
-        width: 15px;
-        height: 15px;
-        border: 1.5px solid var(--mlv-check-border);
-        border-radius: 4px;
-        background: #fff;
-        cursor: pointer;
-        transition: all var(--mlv-transition);
-        position: relative;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        vertical-align: middle;
-        flex-shrink: 0;
+// ─── Checkboxes ──────────────────────────────────────────────────────────────
+.o_list_view input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    border: 2px solid var(--mlv-check-border);
+    border-radius: 4px;
+    background: #fff;
+    cursor: pointer;
+    transition: all var(--mlv-transition);
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;
+    flex-shrink: 0;
 
-        &:checked {
-            background: var(--mlv-check-checked-bg);
-            border-color: var(--mlv-check-checked-bg);
-
-            &::after {
-                content: '';
-                display: block;
-                width: 9px;
-                height: 6px;
-                border-left: 2px solid #fff;
-                border-bottom: 2px solid #fff;
-                transform: rotate(-45deg) translate(1px, -1px);
-            }
+    &:checked {
+        background: var(--mlv-check-checked-bg);
+        border-color: var(--mlv-check-checked-bg);
+        &::after {
+            content: '';
+            display: block;
+            width: 9px; height: 6px;
+            border-left: 2px solid #fff;
+            border-bottom: 2px solid #fff;
+            transform: rotate(-45deg) translate(1px, -1px);
         }
+    }
 
-        &:indeterminate {
-            background: var(--mlv-check-checked-bg);
-            border-color: var(--mlv-check-checked-bg);
-
-            &::after {
-                content: '';
-                display: block;
-                width: 7px;
-                height: 2px;
-                background: #fff;
-                border-radius: 1px;
-            }
+    &:indeterminate {
+        background: var(--mlv-check-checked-bg);
+        border-color: var(--mlv-check-checked-bg);
+        &::after {
+            content: '';
+            display: block;
+            width: 7px; height: 2px;
+            background: #fff;
+            border-radius: 1px;
         }
+    }
 
-        &:hover:not(:checked) {
-            border-color: var(--mlv-accent);
-            background: var(--mlv-accent-soft);
-        }
+    &:hover:not(:checked) {
+        border-color: var(--mlv-accent);
+        background: var(--mlv-accent-soft);
     }
 }
 
-// ─── Botón "Agregar una línea" ────────────────────────────────────────────────
+// ─── "Agregar una línea" ──────────────────────────────────────────────────────
 .o_list_view .o_list_add_record a,
 .o_list_view a.o_list_add_optional_columns {
-    font-size: 0.82rem;
-    font-weight: 550;
+    font-size: 0.83rem;
+    font-weight: 600;
     color: var(--mlv-accent);
     text-decoration: none;
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    padding: 4px 0;
+    padding: 5px 0;
     transition: opacity var(--mlv-transition);
-
-    &:hover {
-        opacity: 0.75;
-    }
+    &:hover { opacity: 0.7; }
 }
 
-// ─── Toolbar de la lista (búsqueda, botones) ──────────────────────────────────
-.o_list_view .o_list_buttons,
-.o_control_panel_actions .o_list_buttons {
-    .btn {
-        border-radius: 7px;
-        font-size: 0.83rem;
-        font-weight: 550;
-        padding: 5px 14px;
-        transition: all var(--mlv-transition);
-
-        &.btn-primary {
-            background: var(--mlv-accent);
-            border-color: var(--mlv-accent);
-            color: #fff;
-
-            &:hover {
-                background: var(--mlv-text-link-hover);
-                border-color: var(--mlv-text-link-hover);
-            }
-        }
-
-        &.btn-secondary {
-            background: #fff;
-            border-color: var(--mlv-border-color);
-            color: var(--mlv-text-cell);
-
-            &:hover {
-                background: var(--mlv-bg-row-hover);
-            }
-        }
-    }
-}
-
-// ─── Paginación ───────────────────────────────────────────────────────────────
-.o_list_view .o_pager {
-    font-size: 0.8rem;
-    color: var(--mlv-text-muted);
-    font-weight: 500;
-
-    .o_pager_previous,
-    .o_pager_next {
-        border-radius: 6px;
-        border: 1px solid var(--mlv-border-color);
-        background: #fff;
-        color: var(--mlv-text-cell);
-        transition: all var(--mlv-transition);
-        padding: 3px 10px;
-
-        &:hover {
-            background: var(--mlv-bg-row-hover);
-            border-color: var(--mlv-accent);
-            color: var(--mlv-accent);
-        }
-    }
-
-    .o_pager_value {
-        font-weight: 600;
-        color: var(--mlv-text-cell);
-    }
-}
-
-// ─── Campo en edición inline ──────────────────────────────────────────────────
+// ─── Campo en edición ─────────────────────────────────────────────────────────
 .o_list_view .o_selected_row td .o_field_widget input,
 .o_list_view .o_selected_row td .o_field_widget textarea,
 .o_list_view .o_selected_row td .o_field_widget select {
-    border: 1px solid var(--mlv-accent);
-    border-radius: 5px;
-    padding: 3px 8px;
+    border: 1.5px solid var(--mlv-accent);
+    border-radius: 6px;
+    padding: 4px 9px;
     font-size: var(--mlv-cell-size);
     font-family: var(--mlv-font-base);
     outline: none;
@@ -494,60 +428,36 @@
     width: 100%;
 }
 
-// ─── Columnas opcionales dropdown ────────────────────────────────────────────
-.o_list_optional_columns_dropdown {
-    .o_optional_columns_dropdown_toggle {
-        color: var(--mlv-text-muted);
-        cursor: pointer;
-        transition: color var(--mlv-transition);
-        padding: 2px 6px;
-        border-radius: 4px;
-
-        &:hover {
-            color: var(--mlv-accent);
-            background: var(--mlv-accent-soft);
-        }
+// ─── Columnas opcionales toggle ───────────────────────────────────────────────
+.o_list_optional_columns_dropdown .o_optional_columns_dropdown_toggle {
+    color: var(--mlv-text-muted);
+    cursor: pointer;
+    transition: color var(--mlv-transition);
+    padding: 2px 6px;
+    border-radius: 4px;
+    &:hover {
+        color: var(--mlv-accent);
+        background: var(--mlv-accent-soft);
     }
 }
 
-// ─── Scrollbar personalizado ──────────────────────────────────────────────────
-.o_list_renderer {
-    &::-webkit-scrollbar {
-        width: 6px;
-        height: 6px;
-    }
-
-    &::-webkit-scrollbar-track {
-        background: transparent;
-    }
-
-    &::-webkit-scrollbar-thumb {
-        background: #d0d0d8;
-        border-radius: 10px;
-
-        &:hover {
-            background: #b0b0c0;
-        }
-    }
-}
-
-// ─── Modo oscuro (respeta prefers-color-scheme) ───────────────────────────────
+// ─── Modo oscuro ─────────────────────────────────────────────────────────────
 @media (prefers-color-scheme: dark) {
     :root {
-        --mlv-bg-table:             #1a1a2a;
-        --mlv-bg-header:            #16161f;
-        --mlv-bg-row:               #1a1a2a;
-        --mlv-bg-row-alt:           #1e1e2e;
-        --mlv-bg-row-hover:         #22223a;
-        --mlv-bg-row-selected:      #1e2560;
-        --mlv-bg-row-selected-hover:#242b70;
-        --mlv-border-color:         #2a2a3f;
-        --mlv-border-header:        #30304a;
-        --mlv-text-header:          #e0e0f0;
-        --mlv-text-cell:            #c8c8e0;
-        --mlv-text-muted:           #6060a0;
-        --mlv-text-link:            #7b9bff;
-        --mlv-text-link-hover:      #9db5ff;
-        --mlv-check-border:         #4040a0;
+        --mlv-bg-table:              #0f1117;
+        --mlv-bg-header:             #0f1117;
+        --mlv-bg-row:                #0f1117;
+        --mlv-bg-row-alt:            #13161e;
+        --mlv-bg-row-hover:          #1a1f2e;
+        --mlv-bg-row-selected:       #1e2560;
+        --mlv-bg-row-selected-hover: #242b70;
+        --mlv-border-color:          #1e2130;
+        --mlv-border-header:         #2a2f45;
+        --mlv-text-header:           #f0f4ff;
+        --mlv-text-cell:             #d0d8f0;
+        --mlv-text-muted:            #5a6080;
+        --mlv-text-link:             #7b9bff;
+        --mlv-text-link-hover:       #aabfff;
+        --mlv-check-border:          #3a4060;
     }
 }
