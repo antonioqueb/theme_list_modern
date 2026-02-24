@@ -7,39 +7,44 @@
  *  - El contenedor scrollea horizontalmente, la tabla nunca comprime columnas
  *  - Tooltips en celdas truncadas (solo cuando la celda sí está truncada)
  *  - Sin measureText hacky — dejamos que el browser calcule anchos reales
+ *  - Listas embebidas en formularios (one2many/many2many) quedan excluidas
  */
-
 import { patch } from "@web/core/utils/patch";
 import { ListRenderer } from "@web/views/list/list_renderer";
 import { onMounted, onPatched } from "@odoo/owl";
 
+// ─── Detectar lista embebida en formulario ────────────────────────────────────
+function isEmbeddedList(tableEl) {
+    return !!tableEl.closest(
+        ".o_form_view .o_field_one2many, .o_form_view .o_field_many2many, .o_form_view .o_field_widget .o_list_renderer"
+    );
+}
+
 // ─── Forzar tabla no comprimida ───────────────────────────────────────────────
 function enforceTableExpansion(tableEl) {
     if (!tableEl) return;
+    if (isEmbeddedList(tableEl)) return;
 
-    // Tabla: auto layout, nunca comprimir
     tableEl.style.tableLayout = "auto";
     tableEl.style.minWidth = "max-content";
     tableEl.style.width = "100%";
 
-    // Todos los th: no truncar nunca
     tableEl.querySelectorAll("thead th").forEach((th) => {
         th.style.whiteSpace = "nowrap";
         th.style.overflow = "visible";
         th.style.textOverflow = "clip";
     });
 
-    // Celdas de datos: white-space nowrap para que el contenido dicte el ancho
-    // Quitamos max-width:0 que causaba truncado forzado
     tableEl.querySelectorAll("tbody td:not(.o_list_record_selector)").forEach((td) => {
         td.style.whiteSpace = "nowrap";
-        td.style.maxWidth = "";   // eliminar cualquier max-width heredado
+        td.style.maxWidth = "";
     });
 }
 
 // ─── Tooltips en celdas truncadas ────────────────────────────────────────────
 function addCellTooltips(tableEl) {
     if (!tableEl) return;
+    if (isEmbeddedList(tableEl)) return;
 
     tableEl.querySelectorAll("tbody td:not(.o_list_record_selector)").forEach((td) => {
         if (td._mlvTip) return;
@@ -60,9 +65,8 @@ patch(ListRenderer.prototype, {
         super.setup(...arguments);
 
         const apply = () => {
-            // Buscar la tabla dentro del componente
             const tableEl = this.el?.querySelector("table.o_list_table");
-            if (tableEl) {
+            if (tableEl && !isEmbeddedList(tableEl)) {
                 enforceTableExpansion(tableEl);
                 addCellTooltips(tableEl);
             }
@@ -78,11 +82,9 @@ const _mo = new MutationObserver((mutations) => {
     for (const m of mutations) {
         for (const node of m.addedNodes) {
             if (node.nodeType !== Node.ELEMENT_NODE) continue;
-
             const tables = node.classList?.contains("o_list_table")
                 ? [node]
                 : [...(node.querySelectorAll?.(".o_list_table") || [])];
-
             for (const t of tables) {
                 enforceTableExpansion(t);
                 addCellTooltips(t);
