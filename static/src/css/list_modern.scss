@@ -7,10 +7,6 @@
  * - Eliminadas cabeceras/fondos oscuros (badges dark ahora son claros)
  * - Suavizados colores “casi negros” en totales/monetarios y tfoot
  * - Montos SIN tipografía mono “vieja”: ahora usan sans moderno con tabular-nums
- *
- * Update (sin alterar paleta/estética base):
- * - Sticky Totals (TFOOT) fijo abajo dentro del renderer (scroll interno)
- * - Glassmorphism en sticky header (THEAD) y sticky totals (TFOOT) al hacer scroll
  */
 
 // ─── Variables ───────────────────────────────────────────────────────────────
@@ -67,12 +63,6 @@
 
     // Row height mínima
     --mlv-row-height: 52px;
-
-    // ─── Glassmorphism (sin cambiar colores base: solo alfa/blurs) ─────────
-    --mlv-glass-blur: 12px;
-    --mlv-glass-bg: rgba(255, 255, 255, 0.72);
-    --mlv-glass-border: rgba(39, 50, 74, 0.10);   // derivado de --mlv-text-cell
-    --mlv-glass-accent-line: rgba(59, 91, 219, 0.14); // derivado de --mlv-accent
 }
 
 // ─── Contenedor ──────────────────────────────────────────────────────────────
@@ -86,16 +76,8 @@
         border: 1px solid var(--mlv-border-color);
         border-radius: var(--mlv-border-radius);
         box-shadow: var(--mlv-shadow-table);
-
-        // Importante: para sticky header/footer, el scroll debe ocurrir aquí.
         overflow-x: auto;
-        overflow-y: auto;
-
-        // Opcional: si quieres que siempre exista viewport interno.
-        // Si no lo quieres, puedes quitar esta línea.
-        max-height: calc(100vh - 260px);
-
-        position: relative;
+        overflow-y: visible;
 
         &::-webkit-scrollbar { height: 6px; width: 6px; }
         &::-webkit-scrollbar-track { background: transparent; }
@@ -124,34 +106,17 @@
     thead {
         position: sticky;
         top: 0;
-        z-index: 20;
-
-        // Glassmorphism: blur del contenido detrás
-        backdrop-filter: blur(var(--mlv-glass-blur));
-        -webkit-backdrop-filter: blur(var(--mlv-glass-blur));
+        z-index: 10;
 
         tr th {
-            // Antes: background sólido. Ahora: mismo blanco pero con alpha (cristal)
-            background: var(--mlv-glass-bg);
-            // brillo sutil sin alterar paleta (es blanco con alpha)
-            background-image: linear-gradient(
-                to bottom,
-                rgba(255, 255, 255, 0.55),
-                rgba(255, 255, 255, 0.25)
-            );
-            background-blend-mode: overlay;
-
+            background: var(--mlv-bg-header);
             color: var(--mlv-text-header);
             font-size: var(--mlv-header-size);
             font-weight: var(--mlv-header-weight);
             letter-spacing: 0.05em;
             text-transform: uppercase;
             padding: var(--mlv-header-py) var(--mlv-cell-px);
-
-            // Mantén tu línea, pero afinada a glass (no cambia color, solo alfa)
             border-bottom: 2px solid var(--mlv-border-header);
-            box-shadow: inset 0 -1px 0 var(--mlv-glass-border);
-
             border-right: none;
             white-space: nowrap;
             overflow: visible;
@@ -159,15 +124,13 @@
             cursor: default;
             transition: color var(--mlv-transition);
             position: relative;
-            background-clip: padding-box;
 
             &:not(:last-child)::after {
                 content: '';
                 position: absolute;
                 right: 0; top: 25%; height: 50%;
                 width: 1px;
-                // antes: border-color. Ahora: hairline sutil
-                background: var(--mlv-glass-border);
+                background: var(--mlv-border-color);
             }
 
             &.o_column_sortable {
@@ -201,17 +164,6 @@
             }
 
             i.fa { font-size: 0.75rem; color: var(--mlv-text-muted); }
-        }
-
-        // Línea de acento ultra sutil (solo alpha del acento)
-        &::after {
-            content: "";
-            position: absolute;
-            left: 0; right: 0;
-            bottom: 0;
-            height: 1px;
-            background: var(--mlv-glass-accent-line);
-            pointer-events: none;
         }
     }
 
@@ -281,14 +233,14 @@
                     line-height: 1.4;
                 }
 
-                .badge.text-bg-success, .badge.bg-success       { background: #dcfce7 !important; color: #15803d !important; }
-                .badge.text-bg-danger,  .badge.bg-danger        { background: #fee2e2 !important; color: #b91c1c !important; }
-                .badge.text-bg-warning, .badge.bg-warning       { background: #fef9c3 !important; color: #a16207 !important; }
-                .badge.text-bg-info,    .badge.bg-info          { background: #dbeafe !important; color: #1d4ed8 !important; }
-                .badge.text-bg-primary, .badge.bg-primary       { background: #e0e7ff !important; color: #3730a3 !important; }
-                .badge.text-bg-secondary,.badge.bg-secondary    { background: #f3f4f6 !important; color: #374151 !important; }
-                .badge.text-bg-dark,    .badge.bg-dark          { background: #f3f4f6 !important; color: #374151 !important; }
-                .badge.text-bg-light,   .badge.bg-light         { background: #f8fafc !important; color: #475569 !important; border: 1px solid #e2e8f0 !important; }
+                .badge.text-bg-success, .badge.bg-success      { background: #dcfce7 !important; color: #15803d !important; }
+                .badge.text-bg-danger,  .badge.bg-danger       { background: #fee2e2 !important; color: #b91c1c !important; }
+                .badge.text-bg-warning, .badge.bg-warning      { background: #fef9c3 !important; color: #a16207 !important; }
+                .badge.text-bg-info,    .badge.bg-info         { background: #dbeafe !important; color: #1d4ed8 !important; }
+                .badge.text-bg-primary, .badge.bg-primary      { background: #e0e7ff !important; color: #3730a3 !important; }
+                .badge.text-bg-secondary,.badge.bg-secondary   { background: #f3f4f6 !important; color: #374151 !important; }
+                .badge.text-bg-dark,    .badge.bg-dark         { background: #f3f4f6 !important; color: #374151 !important; }
+                .badge.text-bg-light,   .badge.bg-light        { background: #f8fafc !important; color: #475569 !important; border: 1px solid #e2e8f0 !important; }
 
                 .o_tag {
                     font-size: 0.72rem;
@@ -363,54 +315,17 @@
     }
 
     // ─── TFOOT ───────────────────────────────────────────────────────────
-    tfoot {
-        position: sticky;
-        bottom: 0;
-        z-index: 18;
+    tfoot tr {
+        border-top: 2px solid var(--mlv-border-header);
+        background: #ffffff;
 
-        // Glassmorphism: blur del contenido detrás
-        backdrop-filter: blur(var(--mlv-glass-blur));
-        -webkit-backdrop-filter: blur(var(--mlv-glass-blur));
-
-        tr {
-            // Antes: background sólido. Ahora: mismo blanco con alpha (cristal)
-            background: var(--mlv-glass-bg);
-            background-image: linear-gradient(
-                to top,
-                rgba(255, 255, 255, 0.55),
-                rgba(255, 255, 255, 0.25)
-            );
-            background-blend-mode: overlay;
-
-            border-top: 2px solid var(--mlv-border-header);
-            box-shadow:
-                0 -8px 18px rgba(0,0,0,.06),
-                inset 0 1px 0 rgba(255,255,255,.55);
-
-            td {
-                padding: var(--mlv-cell-py) var(--mlv-cell-px);
-                font-weight: 800;
-                font-size: 0.90rem;
-                font-variant-numeric: tabular-nums;
-                font-family: var(--mlv-font-numeric); // <- ya NO es mono
-                color: #1e293b;
-
-                // Deja que la fila controle el glass
-                background: transparent;
-                background-clip: padding-box;
-                position: relative;
-            }
-        }
-
-        // Línea de acento ultra sutil (solo alpha del acento)
-        &::before {
-            content: "";
-            position: absolute;
-            left: 0; right: 0;
-            top: 0;
-            height: 1px;
-            background: rgba(59, 91, 219, 0.12);
-            pointer-events: none;
+        td {
+            padding: var(--mlv-cell-py) var(--mlv-cell-px);
+            font-weight: 800;
+            font-size: 0.90rem;
+            font-variant-numeric: tabular-nums;
+            font-family: var(--mlv-font-numeric); // <- ya NO es mono
+            color: #1e293b;
         }
     }
 }
@@ -507,3 +422,4 @@
         background: var(--mlv-accent-soft);
     }
 }
+
