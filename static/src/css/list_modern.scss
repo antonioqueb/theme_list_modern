@@ -6,12 +6,15 @@
  * - Eliminado soporte de modo oscuro (prefers-color-scheme: dark)
  * - Eliminadas cabeceras/fondos oscuros (badges dark ahora son claros)
  * - Suavizados colores “casi negros” en totales/monetarios y tfoot
+ * - Montos SIN tipografía mono “vieja”: ahora usan sans moderno con tabular-nums
  */
 
 // ─── Variables ───────────────────────────────────────────────────────────────
 :root {
-    --mlv-font-base:  'DM Sans', 'Inter', system-ui, sans-serif;
-    --mlv-font-mono:  'JetBrains Mono', 'Courier New', monospace;
+    --mlv-font-base:  'DM Sans', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+    // Antes era mono; ahora es sans moderno (para números alineados pero con look UI)
+    --mlv-font-numeric: 'DM Sans', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 
     // Fondos (tema claro)
     --mlv-bg-table:              #ffffff;
@@ -28,9 +31,9 @@
     --mlv-border-radius:  10px;
 
     // Texto — alto contraste pero sin “negros”
-    --mlv-text-header:     #1f2937;   // antes #111827
-    --mlv-text-cell:       #27324a;   // antes #1e2433
-    --mlv-text-muted:      #6b7280;   // antes #4d4e4e
+    --mlv-text-header:     #1f2937;
+    --mlv-text-cell:       #27324a;
+    --mlv-text-muted:      #353535;
     --mlv-text-link:       #3b5bdb;
     --mlv-text-link-hover: #1d3cb8;
 
@@ -50,7 +53,7 @@
 
     // Tipografía
     --mlv-header-size:   0.73rem;
-    --mlv-cell-size:     0.875rem;
+    --mlv-cell-size:     0.975rem;
     --mlv-header-weight: 700;
 
     // Espaciado
@@ -230,17 +233,14 @@
                     line-height: 1.4;
                 }
 
-                .badge.text-bg-success, .badge.bg-success     { background: #dcfce7 !important; color: #15803d !important; }
-                .badge.text-bg-danger,  .badge.bg-danger      { background: #fee2e2 !important; color: #b91c1c !important; }
-                .badge.text-bg-warning, .badge.bg-warning     { background: #fef9c3 !important; color: #a16207 !important; }
-                .badge.text-bg-info,    .badge.bg-info        { background: #dbeafe !important; color: #1d4ed8 !important; }
-                .badge.text-bg-primary, .badge.bg-primary     { background: #e0e7ff !important; color: #3730a3 !important; }
-                .badge.text-bg-secondary,.badge.bg-secondary  { background: #f3f4f6 !important; color: #374151 !important; }
-
-                // Antes era oscuro; ahora siempre claro (sin fondos negros)
-                .badge.text-bg-dark,    .badge.bg-dark        { background: #f3f4f6 !important; color: #374151 !important; }
-
-                .badge.text-bg-light,   .badge.bg-light       { background: #f8fafc !important; color: #475569 !important; border: 1px solid #e2e8f0 !important; }
+                .badge.text-bg-success, .badge.bg-success      { background: #dcfce7 !important; color: #15803d !important; }
+                .badge.text-bg-danger,  .badge.bg-danger       { background: #fee2e2 !important; color: #b91c1c !important; }
+                .badge.text-bg-warning, .badge.bg-warning      { background: #fef9c3 !important; color: #a16207 !important; }
+                .badge.text-bg-info,    .badge.bg-info         { background: #dbeafe !important; color: #1d4ed8 !important; }
+                .badge.text-bg-primary, .badge.bg-primary      { background: #e0e7ff !important; color: #3730a3 !important; }
+                .badge.text-bg-secondary,.badge.bg-secondary   { background: #f3f4f6 !important; color: #374151 !important; }
+                .badge.text-bg-dark,    .badge.bg-dark         { background: #f3f4f6 !important; color: #374151 !important; }
+                .badge.text-bg-light,   .badge.bg-light        { background: #f8fafc !important; color: #475569 !important; border: 1px solid #e2e8f0 !important; }
 
                 .o_tag {
                     font-size: 0.72rem;
@@ -270,15 +270,16 @@
                     &.o_status_grey  { background: #d1d5db; }
                 }
 
+                // ─── NUMÉRICOS / MONTOS ───────────────────────────────────
                 &.o_monetary_cell,
                 &.o_integer_cell,
                 &.o_float_cell {
                     text-align: right;
                     font-variant-numeric: tabular-nums;
-                    font-family: var(--mlv-font-mono);
-                    font-size: 0.84rem;
-                    font-weight: 500;
-                    color: #1e293b; // antes #0f172a (menos “negro”)
+                    font-family: var(--mlv-font-numeric); // <- ya NO es mono
+                    font-size: 0.88rem;                   // ligeramente más “premium”
+                    font-weight: 600;
+                    color: #1e293b;
                 }
 
                 .o_field_boolean .o_checkbox,
@@ -316,15 +317,15 @@
     // ─── TFOOT ───────────────────────────────────────────────────────────
     tfoot tr {
         border-top: 2px solid var(--mlv-border-header);
-        background: #ffffff; // antes #f8fafc (más limpio)
+        background: #ffffff;
 
         td {
             padding: var(--mlv-cell-py) var(--mlv-cell-px);
-            font-weight: 700;
-            font-size: var(--mlv-cell-size);
+            font-weight: 800;
+            font-size: 0.90rem;
             font-variant-numeric: tabular-nums;
-            font-family: var(--mlv-font-mono);
-            color: #1e293b; // antes #0f172a
+            font-family: var(--mlv-font-numeric); // <- ya NO es mono
+            color: #1e293b;
         }
     }
 }
