@@ -1,13 +1,6 @@
 /**
  * Modern List View Theme v2 - Odoo 19
  * Alphaqueb Consulting SAS
- *
- * v2 changes:
- *  - Cabecera: fondo nativo (blanco), sin gris oscuro
- *  - Tabla: table-layout auto + min-width en contenedor → siempre muestra todo
- *  - Filas: más altura y padding
- *  - Tags/badges: paleta vibrante con colores por tipo
- *  - Texto: mayor contraste
  */
 
 // ─── Variables ───────────────────────────────────────────────────────────────
@@ -15,9 +8,9 @@
     --mlv-font-base:  'DM Sans', 'Inter', system-ui, sans-serif;
     --mlv-font-mono:  'JetBrains Mono', 'Courier New', monospace;
 
-    // Fondos — header hereda el blanco nativo
+    // Fondos
     --mlv-bg-table:              #ffffff;
-    --mlv-bg-header:             #ffffff;   // ← blanco nativo, sin gris
+    --mlv-bg-header:             #ffffff;
     --mlv-bg-row:                #ffffff;
     --mlv-bg-row-alt:            #f9fafc;
     --mlv-bg-row-hover:          #f0f4ff;
@@ -26,13 +19,13 @@
 
     // Bordes
     --mlv-border-color:   #e4e7ef;
-    --mlv-border-header:  #c8cfe0;   // línea inferior de cabecera — ligeramente más visible
+    --mlv-border-header:  #c8cfe0;
     --mlv-border-radius:  10px;
 
-    // Texto
-    --mlv-text-header:    #111827;   // casi negro — máximo contraste
-    --mlv-text-cell:      #1e2433;   // oscuro
-    --mlv-text-muted:     #6b7280;
+    // Texto — oscuro, alto contraste
+    --mlv-text-header:    #111827;
+    --mlv-text-cell:      #1e2433;
+    --mlv-text-muted:     #4d4e4e;
     --mlv-text-link:      #3b5bdb;
     --mlv-text-link-hover:#1d3cb8;
 
@@ -55,13 +48,13 @@
     --mlv-cell-size:     0.875rem;
     --mlv-header-weight: 700;
 
-    // Espaciado — más generoso
+    // Espaciado
     --mlv-cell-px:    18px;
-    --mlv-cell-py:    14px;   // ← aumentado para más altura de fila
+    --mlv-cell-py:    14px;
     --mlv-header-py:  13px;
 
     // Row height mínima
-    --mlv-row-height: 52px;   // ← más alto
+    --mlv-row-height: 52px;
 }
 
 // ─── Contenedor ──────────────────────────────────────────────────────────────
@@ -75,7 +68,6 @@
         border: 1px solid var(--mlv-border-color);
         border-radius: var(--mlv-border-radius);
         box-shadow: var(--mlv-shadow-table);
-        // ← overflow-x: auto permite scroll horizontal cuando la tabla es > viewport
         overflow-x: auto;
         overflow-y: visible;
 
@@ -92,8 +84,6 @@
 // ─── Tabla ───────────────────────────────────────────────────────────────────
 .o_list_view table.o_list_table,
 .o_list_renderer table.o_list_table {
-    // table-layout: auto → el navegador calcula anchos según contenido real
-    // min-width: max-content → la tabla nunca se comprime; el contenedor scrollea
     table-layout: auto;
     min-width: max-content;
     width: 100%;
@@ -111,7 +101,7 @@
         z-index: 10;
 
         tr th {
-            background: var(--mlv-bg-header);   // blanco nativo
+            background: var(--mlv-bg-header);
             color: var(--mlv-text-header);
             font-size: var(--mlv-header-size);
             font-weight: var(--mlv-header-weight);
@@ -120,14 +110,13 @@
             padding: var(--mlv-header-py) var(--mlv-cell-px);
             border-bottom: 2px solid var(--mlv-border-header);
             border-right: none;
-            white-space: nowrap;    // cabeceras siempre en una línea
+            white-space: nowrap;
             overflow: visible;
             vertical-align: middle;
             cursor: default;
             transition: color var(--mlv-transition);
             position: relative;
 
-            // Separador vertical entre columnas
             &:not(:last-child)::after {
                 content: '';
                 position: absolute;
@@ -136,7 +125,6 @@
                 background: var(--mlv-border-color);
             }
 
-            // Columna ordenable
             &.o_column_sortable {
                 cursor: pointer;
                 user-select: none;
@@ -154,7 +142,6 @@
                 }
             }
 
-            // Checkbox / selector
             &.o_list_record_selector,
             &.o_list_selection_box {
                 width: 44px; min-width: 44px; max-width: 44px;
@@ -162,7 +149,6 @@
                 padding: var(--mlv-header-py) 8px;
             }
 
-            // Columna de opcionales
             &.o_list_optional_columns_dropdown {
                 width: 38px; min-width: 38px;
                 text-align: center;
@@ -205,9 +191,6 @@
                 font-size: var(--mlv-cell-size);
                 color: var(--mlv-text-cell);
                 white-space: nowrap;
-
-                // Celdas de datos: dejar que la tabla decida el ancho (table-layout auto)
-                // No ponemos max-width: 0 para que el contenido no se trunque
                 overflow: hidden;
                 text-overflow: ellipsis;
 
@@ -217,7 +200,6 @@
                     padding: var(--mlv-cell-py) 8px;
                 }
 
-                // Links / many2one
                 a, .o_form_uri {
                     color: var(--mlv-text-link);
                     text-decoration: none;
@@ -229,10 +211,7 @@
                     }
                 }
 
-                // ─── BADGES Y TAGS — paleta vibrante ─────────────────────
-                // Odoo usa .badge + clases de color tipo text-bg-success, etc.
-                // También .o_tag con color inline. Mejoramos los estilos base.
-
+                // ─── BADGES Y TAGS ────────────────────────────────────────
                 .badge {
                     font-size: 0.7rem;
                     font-weight: 700;
@@ -246,17 +225,15 @@
                     line-height: 1.4;
                 }
 
-                // Colores vibrantes para cada variante de Bootstrap badge
-                .badge.text-bg-success, .badge.bg-success  { background: #dcfce7 !important; color: #15803d !important; }
-                .badge.text-bg-danger,  .badge.bg-danger   { background: #fee2e2 !important; color: #b91c1c !important; }
-                .badge.text-bg-warning, .badge.bg-warning  { background: #fef9c3 !important; color: #a16207 !important; }
-                .badge.text-bg-info,    .badge.bg-info     { background: #dbeafe !important; color: #1d4ed8 !important; }
-                .badge.text-bg-primary, .badge.bg-primary  { background: #e0e7ff !important; color: #3730a3 !important; }
-                .badge.text-bg-secondary,.badge.bg-secondary{ background: #f3f4f6 !important; color: #374151 !important; }
-                .badge.text-bg-dark,    .badge.bg-dark     { background: #1f2937 !important; color: #f9fafb !important; }
-                .badge.text-bg-light,   .badge.bg-light    { background: #f8fafc !important; color: #475569 !important; border: 1px solid #e2e8f0 !important; }
+                .badge.text-bg-success, .badge.bg-success    { background: #dcfce7 !important; color: #15803d !important; }
+                .badge.text-bg-danger,  .badge.bg-danger     { background: #fee2e2 !important; color: #b91c1c !important; }
+                .badge.text-bg-warning, .badge.bg-warning    { background: #fef9c3 !important; color: #a16207 !important; }
+                .badge.text-bg-info,    .badge.bg-info       { background: #dbeafe !important; color: #1d4ed8 !important; }
+                .badge.text-bg-primary, .badge.bg-primary    { background: #e0e7ff !important; color: #3730a3 !important; }
+                .badge.text-bg-secondary,.badge.bg-secondary { background: #f3f4f6 !important; color: #374151 !important; }
+                .badge.text-bg-dark,    .badge.bg-dark       { background: #1f2937 !important; color: #f9fafb !important; }
+                .badge.text-bg-light,   .badge.bg-light      { background: #f8fafc !important; color: #475569 !important; border: 1px solid #e2e8f0 !important; }
 
-                // .o_tag — chip de many2many tags
                 .o_tag {
                     font-size: 0.72rem;
                     font-weight: 650;
@@ -269,25 +246,22 @@
                     gap: 3px;
                     line-height: 1.5;
 
-                    // Si no tiene color Odoo, aplicar default
                     &:not([style*="background"]) {
                         background: #e0e7ff;
                         color: #3730a3;
                     }
                 }
 
-                // Estado de Odoo .o_field_status_bar / .o_status (kanban state)
                 .o_status {
                     width: 12px; height: 12px;
                     border-radius: 50%;
                     display: inline-block;
                     box-shadow: 0 0 0 2px rgba(0,0,0,.08);
-                    &.o_status_green  { background: #22c55e; }
-                    &.o_status_red    { background: #ef4444; }
-                    &.o_status_grey   { background: #d1d5db; }
+                    &.o_status_green { background: #22c55e; }
+                    &.o_status_red   { background: #ef4444; }
+                    &.o_status_grey  { background: #d1d5db; }
                 }
 
-                // Numéricos y monetarios
                 &.o_monetary_cell,
                 &.o_integer_cell,
                 &.o_float_cell {
@@ -299,7 +273,6 @@
                     color: #0f172a;
                 }
 
-                // Boolean
                 .o_field_boolean .o_checkbox,
                 .o_field_boolean input[type="checkbox"] {
                     accent-color: var(--mlv-accent);
@@ -307,7 +280,6 @@
                     cursor: default;
                 }
 
-                // Acciones inline — visibles en hover
                 .o_list_record_remove,
                 .o_btn_list_action {
                     opacity: 0;
