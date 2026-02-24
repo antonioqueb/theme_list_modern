@@ -1,424 +1,247 @@
-/**
- * Modern List View Theme v2 - Odoo 19 (Light Theme Only)
- * Alphaqueb Consulting SAS
- *
- * Cambios aplicados:
- * - Eliminado soporte de modo oscuro (prefers-color-scheme: dark)
- * - Eliminadas cabeceras/fondos oscuros (badges dark ahora son claros)
- * - Suavizados colores “casi negros” en totales/monetarios y tfoot
- * - Montos SIN tipografía mono “vieja”: ahora usan sans moderno con tabular-nums
- */
+/* ==========================================================================
+   Modern List View Theme v2.1 — “Ultra Modern / Innovative”
+   - NO altera tu paleta: solo overlays, blur y sombras.
+   - Pégalo AL FINAL del archivo para que sobre-escriba.
+   ========================================================================== */
 
-// ─── Variables ───────────────────────────────────────────────────────────────
+/* ─── Variables extra (misma paleta, solo alfas) ─────────────────────────── */
 :root {
-    --mlv-font-base:  'DM Sans', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-
-    // Antes era mono; ahora es sans moderno (para números alineados pero con look UI)
-    --mlv-font-numeric: 'DM Sans', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-
-    // Fondos (tema claro)
-    --mlv-bg-table:              #ffffff;
-    --mlv-bg-header:             #ffffff;
-    --mlv-bg-row:                #ffffff;
-    --mlv-bg-row-alt:            #f9fafc;
-    --mlv-bg-row-hover:          #f0f4ff;
-    --mlv-bg-row-selected:       #e8eeff;
-    --mlv-bg-row-selected-hover: #dde5ff;
-
-    // Bordes
-    --mlv-border-color:   #e4e7ef;
-    --mlv-border-header:  #c8cfe0;
-    --mlv-border-radius:  10px;
-
-    // Texto — alto contraste pero sin “negros”
-    --mlv-text-header:     #1f2937;
-    --mlv-text-cell:       #27324a;
-    --mlv-text-muted:      #353535;
-    --mlv-text-link:       #3b5bdb;
-    --mlv-text-link-hover: #1d3cb8;
-
-    // Acento
-    --mlv-accent:      #3b5bdb;
-    --mlv-accent-soft: rgba(59, 91, 219, 0.08);
-
-    // Checkbox
-    --mlv-check-border:     #9ca3af;
-    --mlv-check-checked-bg: #3b5bdb;
-
-    // Sombras
-    --mlv-shadow-table: 0 1px 2px rgba(0,0,0,.05), 0 4px 20px rgba(0,0,0,.05);
-
-    // Transición
-    --mlv-transition: 140ms ease;
-
-    // Tipografía
-    --mlv-header-size:   0.73rem;
-    --mlv-cell-size:     0.975rem;
-    --mlv-header-weight: 700;
-
-    // Espaciado
-    --mlv-cell-px:   18px;
-    --mlv-cell-py:   14px;
-    --mlv-header-py: 13px;
-
-    // Row height mínima
-    --mlv-row-height: 52px;
+  --mlv-glass-blur: 10px;
+  --mlv-hairline: rgba(39, 50, 74, 0.07);      // basado en --mlv-text-cell
+  --mlv-sheen: rgba(59, 91, 219, 0.06);        // basado en --mlv-accent
+  --mlv-sheen-2: rgba(59, 91, 219, 0.10);
+  --mlv-row-lift: 0 10px 30px rgba(0,0,0,.06);
+  --mlv-row-lift-soft: 0 6px 18px rgba(0,0,0,.05);
 }
 
-// ─── Contenedor ──────────────────────────────────────────────────────────────
+/* ─── Contenedor: “panel” más premium (misma base) ───────────────────────── */
 .o_list_view {
-    background: transparent;
-    border: none;
-
-    .o_list_renderer,
-    > .o_list_renderer {
-        background: var(--mlv-bg-table);
-        border: 1px solid var(--mlv-border-color);
-        border-radius: var(--mlv-border-radius);
-        box-shadow: var(--mlv-shadow-table);
-        overflow-x: auto;
-        overflow-y: visible;
-
-        &::-webkit-scrollbar { height: 6px; width: 6px; }
-        &::-webkit-scrollbar-track { background: transparent; }
-        &::-webkit-scrollbar-thumb {
-            background: #d1d5e0;
-            border-radius: 10px;
-            &:hover { background: #a0a8c0; }
-        }
-    }
+  /* sensación de layout moderno sin tocar colores */
+  padding: 6px;
 }
 
-// ─── Tabla ───────────────────────────────────────────────────────────────────
-.o_list_view table.o_list_table,
-.o_list_renderer table.o_list_table {
-    table-layout: auto;
-    min-width: max-content;
-    width: 100%;
-    border-collapse: collapse;
-    border-spacing: 0;
-    font-family: var(--mlv-font-base);
-    font-size: var(--mlv-cell-size);
-    color: var(--mlv-text-cell);
-    background: var(--mlv-bg-table);
+.o_list_view .o_list_renderer,
+.o_list_view > .o_list_renderer {
+  /* borde doble sutil (hairline + accent en alfa) */
+  position: relative;
 
-    // ─── THEAD ───────────────────────────────────────────────────────────
-    thead {
-        position: sticky;
-        top: 0;
-        z-index: 10;
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: var(--mlv-border-radius);
+    pointer-events: none;
+    /* halo suave con tu accent, sin cambiar el color real */
+    box-shadow: 0 0 0 1px var(--mlv-hairline), 0 0 0 6px rgba(59, 91, 219, 0.03);
+    opacity: 1;
+  }
 
-        tr th {
-            background: var(--mlv-bg-header);
-            color: var(--mlv-text-header);
-            font-size: var(--mlv-header-size);
-            font-weight: var(--mlv-header-weight);
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-            padding: var(--mlv-header-py) var(--mlv-cell-px);
-            border-bottom: 2px solid var(--mlv-border-header);
-            border-right: none;
-            white-space: nowrap;
-            overflow: visible;
-            vertical-align: middle;
-            cursor: default;
-            transition: color var(--mlv-transition);
-            position: relative;
-
-            &:not(:last-child)::after {
-                content: '';
-                position: absolute;
-                right: 0; top: 25%; height: 50%;
-                width: 1px;
-                background: var(--mlv-border-color);
-            }
-
-            &.o_column_sortable {
-                cursor: pointer;
-                user-select: none;
-
-                .o_list_column_title {
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 4px;
-                    transition: color var(--mlv-transition);
-                }
-
-                &:hover {
-                    color: var(--mlv-accent);
-                    .o_list_column_title { color: var(--mlv-accent); }
-                }
-            }
-
-            &.o_list_record_selector,
-            &.o_list_selection_box {
-                width: 44px; min-width: 44px; max-width: 44px;
-                text-align: center;
-                padding: var(--mlv-header-py) 8px;
-            }
-
-            &.o_list_optional_columns_dropdown {
-                width: 38px; min-width: 38px;
-                text-align: center;
-                padding: var(--mlv-header-py) 6px;
-            }
-
-            i.fa { font-size: 0.75rem; color: var(--mlv-text-muted); }
-        }
-    }
-
-    // ─── TBODY ───────────────────────────────────────────────────────────
-    tbody {
-        tr.o_data_row {
-            min-height: var(--mlv-row-height);
-            background: var(--mlv-bg-row);
-            transition: background var(--mlv-transition);
-            border-bottom: 1px solid var(--mlv-border-color);
-
-            &:nth-child(even) { background: var(--mlv-bg-row-alt); }
-            &:last-child { border-bottom: none; }
-
-            &:not(.o_selected_row):hover {
-                background: var(--mlv-bg-row-hover);
-            }
-
-            &.o_selected_row {
-                background: var(--mlv-bg-row-selected);
-                box-shadow: inset 3px 0 0 var(--mlv-accent);
-                &:hover { background: var(--mlv-bg-row-selected-hover); }
-            }
-
-            &.o_is_dirty {
-                box-shadow: inset 3px 0 0 #f97316;
-                background: #fff8f4;
-            }
-
-            td {
-                padding: var(--mlv-cell-py) var(--mlv-cell-px);
-                vertical-align: middle;
-                font-size: var(--mlv-cell-size);
-                color: var(--mlv-text-cell);
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-
-                &.o_list_record_selector {
-                    width: 44px; min-width: 44px; max-width: 44px;
-                    text-align: center;
-                    padding: var(--mlv-cell-py) 8px;
-                }
-
-                a, .o_form_uri {
-                    color: var(--mlv-text-link);
-                    text-decoration: none;
-                    font-weight: 500;
-                    transition: color var(--mlv-transition);
-                    &:hover {
-                        color: var(--mlv-text-link-hover);
-                        text-decoration: underline;
-                    }
-                }
-
-                // ─── BADGES Y TAGS ────────────────────────────────────────
-                .badge {
-                    font-size: 0.7rem;
-                    font-weight: 700;
-                    letter-spacing: 0.04em;
-                    padding: 3px 10px;
-                    border-radius: 20px;
-                    border: none;
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 4px;
-                    line-height: 1.4;
-                }
-
-                .badge.text-bg-success, .badge.bg-success      { background: #dcfce7 !important; color: #15803d !important; }
-                .badge.text-bg-danger,  .badge.bg-danger       { background: #fee2e2 !important; color: #b91c1c !important; }
-                .badge.text-bg-warning, .badge.bg-warning      { background: #fef9c3 !important; color: #a16207 !important; }
-                .badge.text-bg-info,    .badge.bg-info         { background: #dbeafe !important; color: #1d4ed8 !important; }
-                .badge.text-bg-primary, .badge.bg-primary      { background: #e0e7ff !important; color: #3730a3 !important; }
-                .badge.text-bg-secondary,.badge.bg-secondary   { background: #f3f4f6 !important; color: #374151 !important; }
-                .badge.text-bg-dark,    .badge.bg-dark         { background: #f3f4f6 !important; color: #374151 !important; }
-                .badge.text-bg-light,   .badge.bg-light        { background: #f8fafc !important; color: #475569 !important; border: 1px solid #e2e8f0 !important; }
-
-                .o_tag {
-                    font-size: 0.72rem;
-                    font-weight: 650;
-                    letter-spacing: 0.03em;
-                    padding: 2px 10px;
-                    border-radius: 20px;
-                    border: none;
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 3px;
-                    line-height: 1.5;
-
-                    &:not([style*="background"]) {
-                        background: #e0e7ff;
-                        color: #3730a3;
-                    }
-                }
-
-                .o_status {
-                    width: 12px; height: 12px;
-                    border-radius: 50%;
-                    display: inline-block;
-                    box-shadow: 0 0 0 2px rgba(0,0,0,.08);
-                    &.o_status_green { background: #22c55e; }
-                    &.o_status_red   { background: #ef4444; }
-                    &.o_status_grey  { background: #d1d5db; }
-                }
-
-                // ─── NUMÉRICOS / MONTOS ───────────────────────────────────
-                &.o_monetary_cell,
-                &.o_integer_cell,
-                &.o_float_cell {
-                    text-align: right;
-                    font-variant-numeric: tabular-nums;
-                    font-family: var(--mlv-font-numeric); // <- ya NO es mono
-                    font-size: 0.88rem;                   // ligeramente más “premium”
-                    font-weight: 600;
-                    color: #1e293b;
-                }
-
-                .o_field_boolean .o_checkbox,
-                .o_field_boolean input[type="checkbox"] {
-                    accent-color: var(--mlv-accent);
-                    width: 15px; height: 15px;
-                    cursor: default;
-                }
-
-                .o_list_record_remove,
-                .o_btn_list_action {
-                    opacity: 0;
-                    transition: opacity var(--mlv-transition);
-                }
-            }
-
-            &:hover td .o_list_record_remove,
-            &:hover td .o_btn_list_action { opacity: 1; }
-        }
-
-        tr.o_list_add_record td {
-            padding: 10px var(--mlv-cell-px);
-            font-size: var(--mlv-cell-size);
-        }
-
-        tr.o_list_no_content_helper td,
-        .o_nocontent_help td {
-            padding: 56px var(--mlv-cell-px);
-            text-align: center;
-            color: var(--mlv-text-muted);
-            font-size: 0.9rem;
-        }
-    }
-
-    // ─── TFOOT ───────────────────────────────────────────────────────────
-    tfoot tr {
-        border-top: 2px solid var(--mlv-border-header);
-        background: #ffffff;
-
-        td {
-            padding: var(--mlv-cell-py) var(--mlv-cell-px);
-            font-weight: 800;
-            font-size: 0.90rem;
-            font-variant-numeric: tabular-nums;
-            font-family: var(--mlv-font-numeric); // <- ya NO es mono
-            color: #1e293b;
-        }
-    }
+  /* “sheen” diagonal ultra sutil para look high-end */
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: var(--mlv-border-radius);
+    pointer-events: none;
+    background:
+      linear-gradient(120deg,
+        rgba(255,255,255,0) 0%,
+        rgba(255,255,255,0) 35%,
+        rgba(255,255,255,0.55) 50%,
+        rgba(255,255,255,0) 65%,
+        rgba(255,255,255,0) 100%);
+    opacity: 0.18;
+    mix-blend-mode: overlay;
+  }
 }
 
-// ─── Checkboxes ──────────────────────────────────────────────────────────────
-.o_list_view input[type="checkbox"] {
-    appearance: none;
-    -webkit-appearance: none;
-    width: 16px; height: 16px;
-    border: 2px solid var(--mlv-check-border);
-    border-radius: 4px;
-    background: #fff;
-    cursor: pointer;
-    transition: all var(--mlv-transition);
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    vertical-align: middle;
-    flex-shrink: 0;
-
-    &:checked {
-        background: var(--mlv-check-checked-bg);
-        border-color: var(--mlv-check-checked-bg);
-        &::after {
-            content: '';
-            display: block;
-            width: 9px; height: 6px;
-            border-left: 2px solid #fff;
-            border-bottom: 2px solid #fff;
-            transform: rotate(-45deg) translate(1px, -1px);
-        }
-    }
-
-    &:indeterminate {
-        background: var(--mlv-check-checked-bg);
-        border-color: var(--mlv-check-checked-bg);
-        &::after {
-            content: '';
-            display: block;
-            width: 7px; height: 2px;
-            background: #fff;
-            border-radius: 1px;
-        }
-    }
-
-    &:hover:not(:checked) {
-        border-color: var(--mlv-accent);
-        background: var(--mlv-accent-soft);
-    }
+/* ─── Header sticky “glass” + separación elegante ───────────────────────── */
+.o_list_view table.o_list_table thead,
+.o_list_renderer table.o_list_table thead {
+  backdrop-filter: blur(var(--mlv-glass-blur));
+  -webkit-backdrop-filter: blur(var(--mlv-glass-blur));
 }
 
-// ─── "Agregar una línea" ──────────────────────────────────────────────────────
-.o_list_view .o_list_add_record a,
-.o_list_view a.o_list_add_optional_columns {
-    font-size: 0.83rem;
-    font-weight: 600;
-    color: var(--mlv-accent);
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 5px 0;
-    transition: opacity var(--mlv-transition);
-    &:hover { opacity: 0.7; }
+.o_list_view table.o_list_table thead tr th,
+.o_list_renderer table.o_list_table thead tr th {
+  /* mejora de lectura + estética */
+  box-shadow: inset 0 -1px 0 var(--mlv-border-header);
+  /* transición más viva */
+  transition:
+    color var(--mlv-transition),
+    transform var(--mlv-transition),
+    background var(--mlv-transition);
 }
 
-// ─── Campo en edición ─────────────────────────────────────────────────────────
-.o_list_view .o_selected_row td .o_field_widget input,
-.o_list_view .o_selected_row td .o_field_widget textarea,
-.o_list_view .o_selected_row td .o_field_widget select {
-    border: 1.5px solid var(--mlv-accent);
-    border-radius: 6px;
-    padding: 4px 9px;
-    font-size: var(--mlv-cell-size);
-    font-family: var(--mlv-font-base);
-    outline: none;
-    box-shadow: 0 0 0 3px var(--mlv-accent-soft);
-    background: #fff;
-    transition: all var(--mlv-transition);
-    width: 100%;
+/* Indicador de ordenamiento: barra sutil con accent (sin tocar paleta) */
+.o_list_view table.o_list_table thead tr th.o-sort-up,
+.o_list_view table.o_list_table thead tr th.o-sort-down,
+.o_list_renderer table.o_list_table thead tr th.o-sort-up,
+.o_list_renderer table.o_list_table thead tr th.o-sort-down {
+  position: relative;
+
+  &::before {
+    content: "";
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    bottom: 3px;
+    height: 2px;
+    border-radius: 2px;
+    background: rgba(59, 91, 219, 0.25);
+  }
 }
 
-// ─── Columnas opcionales toggle ───────────────────────────────────────────────
-.o_list_optional_columns_dropdown .o_optional_columns_dropdown_toggle {
-    color: var(--mlv-text-muted);
-    cursor: pointer;
-    transition: color var(--mlv-transition);
-    padding: 2px 6px;
-    border-radius: 4px;
-
-    &:hover {
-        color: var(--mlv-accent);
-        background: var(--mlv-accent-soft);
-    }
+/* Hover de header: micro “lift” */
+.o_list_view table.o_list_table thead tr th.o_column_sortable:hover,
+.o_list_renderer table.o_list_table thead tr th.o_column_sortable:hover {
+  transform: translateY(-1px);
 }
+
+/* ─── Filas: “cards in table” sin romper tabla ───────────────────────────── */
+.o_list_view table.o_list_table tbody tr.o_data_row,
+.o_list_renderer table.o_list_table tbody tr.o_data_row {
+  position: relative; /* para overlays */
+}
+
+/* Overlay para hover: brillo leve + lift */
+.o_list_view table.o_list_table tbody tr.o_data_row:not(.o_selected_row):hover,
+.o_list_renderer table.o_list_table tbody tr.o_data_row:not(.o_selected_row):hover {
+  box-shadow: var(--mlv-row-lift-soft);
+  transform: translateY(-1px);
+}
+
+/* Suaviza la transición de filas (transform + shadow) */
+.o_list_view table.o_list_table tbody tr.o_data_row,
+.o_list_renderer table.o_list_table tbody tr.o_data_row {
+  transition:
+    background var(--mlv-transition),
+    box-shadow var(--mlv-transition),
+    transform var(--mlv-transition);
+}
+
+/* Separadores “hairline” internos (ultra fino) */
+.o_list_view table.o_list_table tbody tr.o_data_row td,
+.o_list_renderer table.o_list_table tbody tr.o_data_row td {
+  border-bottom: 1px solid transparent;
+  background-clip: padding-box;
+
+  /* línea vertical tipo “grid premium” (sin meter gris nuevo: alfa) */
+  &:not(:last-child) {
+    box-shadow: inset -1px 0 0 rgba(39, 50, 74, 0.05);
+  }
+}
+
+/* Selección: más intencional con overlay accent (misma paleta) */
+.o_list_view table.o_list_table tbody tr.o_data_row.o_selected_row,
+.o_list_renderer table.o_list_table tbody tr.o_data_row.o_selected_row {
+  box-shadow:
+    inset 3px 0 0 var(--mlv-accent),
+    0 10px 26px rgba(0,0,0,.06);
+  transform: translateY(-1px);
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(90deg, rgba(59, 91, 219, 0.08), rgba(59, 91, 219, 0.00) 45%);
+  }
+}
+
+/* ─── Acciones: reveal suave + “pill” hover sin cambiar color ────────────── */
+.o_list_view table.o_list_table tbody tr.o_data_row td .o_list_record_remove,
+.o_list_view table.o_list_table tbody tr.o_data_row td .o_btn_list_action,
+.o_list_renderer table.o_list_table tbody tr.o_data_row td .o_list_record_remove,
+.o_list_renderer table.o_list_table tbody tr.o_data_row td .o_btn_list_action {
+  opacity: 0;
+  transform: translateY(1px);
+  transition:
+    opacity var(--mlv-transition),
+    transform var(--mlv-transition),
+    background var(--mlv-transition);
+  border-radius: 999px;
+  padding: 4px 8px;
+}
+
+.o_list_view table.o_list_table tbody tr.o_data_row:hover td .o_list_record_remove,
+.o_list_view table.o_list_table tbody tr.o_data_row:hover td .o_btn_list_action,
+.o_list_renderer table.o_list_table tbody tr.o_data_row:hover td .o_list_record_remove,
+.o_list_renderer table.o_list_table tbody tr.o_data_row:hover td .o_btn_list_action {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.o_list_view table.o_list_table tbody tr.o_data_row td .o_btn_list_action:hover,
+.o_list_renderer table.o_list_table tbody tr.o_data_row td .o_btn_list_action:hover {
+  background: var(--mlv-accent-soft);
+}
+
+/* ─── Links: subrayado animado “modern UI” sin cambiar color ─────────────── */
+.o_list_view table.o_list_table tbody tr.o_data_row td a,
+.o_list_renderer table.o_list_table tbody tr.o_data_row td a,
+.o_list_view table.o_list_table tbody tr.o_data_row td .o_form_uri,
+.o_list_renderer table.o_list_table tbody tr.o_data_row td .o_form_uri {
+  position: relative;
+  text-decoration: none !important;
+
+  &::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0;
+    bottom: -2px;
+    height: 1px;
+    border-radius: 1px;
+    background: currentColor;
+    opacity: 0.0;
+    transform: scaleX(0.92);
+    transition: opacity var(--mlv-transition), transform var(--mlv-transition);
+  }
+
+  &:hover::after {
+    opacity: 0.55;
+    transform: scaleX(1);
+  }
+}
+
+/* ─── Numéricos: brillo sutil en hover para “premium data feel” ─────────── */
+.o_list_view table.o_list_table tbody tr.o_data_row:hover td.o_monetary_cell,
+.o_list_view table.o_list_table tbody tr.o_data_row:hover td.o_integer_cell,
+.o_list_view table.o_list_table tbody tr.o_data_row:hover td.o_float_cell,
+.o_list_renderer table.o_list_table tbody tr.o_data_row:hover td.o_monetary_cell,
+.o_list_renderer table.o_list_table tbody tr.o_data_row:hover td.o_integer_cell,
+.o_list_renderer table.o_list_table tbody tr.o_data_row:hover td.o_float_cell {
+  text-shadow: 0 0 14px rgba(59, 91, 219, 0.10);
+}
+
+/* ─── Focus accesible: navegación teclado pro ────────────────────────────── */
+.o_list_view :focus-visible {
+  outline: 2px solid rgba(59, 91, 219, 0.35);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ─── Footer: “total bar” más ejecutivo sin cambiar colores ─────────────── */
+.o_list_view table.o_list_table tfoot tr,
+.o_list_renderer table.o_list_table tfoot tr {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  backdrop-filter: blur(var(--mlv-glass-blur));
+  -webkit-backdrop-filter: blur(var(--mlv-glass-blur));
+  box-shadow: 0 -10px 26px rgba(0,0,0,.05);
+}
+
+.o_list_view table.o_list_table tfoot tr td,
+.o_list_renderer table.o_list_table tfoot tr td {
+  /* separación “barra” sin color nuevo: alfas */
+  border-top: 1px solid rgba(39, 50, 74, 0.08);
+}
+
+/* ─── Opcional: “density” visual (sin tocar paleta) ─────────────────────── */
+/* Si quieres que el look sea aún más “innovador”, descomenta esto:
+.o_list_view table.o_list_table tbody tr.o_data_row td {
+  padding-top: calc(var(--mlv-cell-py) - 2px);
+  padding-bottom: calc(var(--mlv-cell-py) - 2px);
+}
+*/
