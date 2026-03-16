@@ -1,5 +1,5 @@
 /**
- * Modern List View Theme v3 - Odoo 19
+ * Modern List View Theme v3.1 - Odoo 19
  * Alphaqueb Consulting SAS
  *
  * Objetivo:
@@ -7,6 +7,8 @@
  * - Modernizar inputs, selects, many2one, dropdowns y widgets editables
  * - Eliminar look “old-school blue”
  * - Mejorar peso visual, contraste y estados focus/hover
+ * - Corregir centrado visual de inputs numéricos/monetarios
+ * - Corregir visualización de múltiples tags/impuestos en many2manytags
  * - Mantener exclusión de reportes contables
  */
 
@@ -455,15 +457,12 @@
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CONTROLES MODERNOS — el cambio clave
+// CONTROLES MODERNOS
 // ─────────────────────────────────────────────────────────────────────────────
-
-// Base visual para wrappers y campos reales
 .o_list_view,
 .o_form_view .o_field_one2many,
 .o_form_view .o_field_many2many {
 
-    // Inputs directos
     input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
     textarea,
     select,
@@ -538,7 +537,6 @@
         background-size: auto, 14px 14px;
     }
 
-    // Controles compactos dentro de celdas editables
     .o_selected_row td,
     td.o_data_cell,
     .o_field_x2many_list_row {
@@ -553,6 +551,7 @@
             padding-left: 11px;
             padding-right: 11px;
             border-radius: 10px;
+            line-height: calc(var(--mlv-control-height-compact) - 3px);
         }
 
         textarea,
@@ -561,10 +560,10 @@
             height: auto;
             padding-top: 9px;
             padding-bottom: 9px;
+            line-height: 1.4;
         }
     }
 
-    // Many2one / autocomplete / relation widgets
     .o_field_widget.o_field_many2one,
     .o_field_widget.o_field_char,
     .o_field_widget.o_field_float,
@@ -591,7 +590,6 @@
         border-radius: var(--mlv-control-radius);
     }
 
-    // wrapper visual cuando Odoo renderiza container + input interno
     .o-autocomplete--input,
     .o-autocomplete input,
     .o_input_dropdown input,
@@ -646,6 +644,94 @@
             text-decoration: none;
         }
     }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Inputs numéricos / monetarios centrados
+// ─────────────────────────────────────────────────────────────────────────────
+.o_list_view td.o_monetary_cell,
+.o_list_view td.o_integer_cell,
+.o_list_view td.o_float_cell,
+.o_form_view .o_field_one2many td.o_monetary_cell,
+.o_form_view .o_field_one2many td.o_integer_cell,
+.o_form_view .o_field_one2many td.o_float_cell {
+
+    input,
+    .o_input {
+        text-align: center !important;
+        font-variant-numeric: tabular-nums;
+        font-feature-settings: "tnum" 1;
+        font-family: var(--mlv-font-numeric);
+        font-weight: 700;
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+    }
+}
+
+.o_list_view td.o_monetary_cell .o_field_widget,
+.o_list_view td.o_float_cell .o_field_widget,
+.o_list_view td.o_integer_cell .o_field_widget,
+.o_form_view .o_field_one2many td.o_monetary_cell .o_field_widget,
+.o_form_view .o_field_one2many td.o_float_cell .o_field_widget,
+.o_form_view .o_field_one2many td.o_integer_cell .o_field_widget {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Many2many tags / impuestos: mostrar varias etiquetas
+// ─────────────────────────────────────────────────────────────────────────────
+.o_list_view .o_field_many2manytags,
+.o_form_view .o_field_one2many .o_field_many2manytags {
+    display: flex !important;
+    align-items: center;
+    flex-wrap: wrap !important;
+    gap: 6px;
+    min-height: var(--mlv-control-height-compact);
+    height: auto !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    padding-top: 4px;
+    padding-bottom: 4px;
+}
+
+.o_list_view .o_field_many2manytags .o_tag,
+.o_list_view .o_field_many2manytags .badge,
+.o_form_view .o_field_one2many .o_field_many2manytags .o_tag,
+.o_form_view .o_field_one2many .o_field_many2manytags .badge {
+    max-width: none !important;
+    white-space: nowrap;
+    overflow: visible !important;
+    text-overflow: unset !important;
+    flex: 0 0 auto;
+}
+
+.o_list_view .o_field_many2manytags .o_delete,
+.o_list_view .o_field_many2manytags .o_tag_badge_text + span,
+.o_form_view .o_field_one2many .o_field_many2manytags .o_delete,
+.o_form_view .o_field_one2many .o_field_many2manytags .o_tag_badge_text + span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 6px;
+    border-radius: 999px;
+    cursor: pointer;
+}
+
+// Fallback seguro sin depender solo de :has()
+.o_list_view td .o_field_many2manytags,
+.o_form_view .o_field_one2many td .o_field_many2manytags {
+    white-space: normal !important;
+    overflow: visible !important;
+}
+
+// Mejora adicional cuando el navegador soporte :has()
+.o_list_view td:has(.o_field_many2manytags),
+.o_form_view .o_field_one2many td:has(.o_field_many2manytags) {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: unset !important;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
