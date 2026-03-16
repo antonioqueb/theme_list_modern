@@ -1,5 +1,5 @@
 /**
- * Modern List View Theme v3.1 - Odoo 19
+ * Modern List View Theme v3.2 - Odoo 19
  * Alphaqueb Consulting SAS
  *
  * Objetivo:
@@ -7,8 +7,10 @@
  * - Modernizar inputs, selects, many2one, dropdowns y widgets editables
  * - Eliminar look “old-school blue”
  * - Mejorar peso visual, contraste y estados focus/hover
- * - Corregir centrado visual de inputs numéricos/monetarios
+ * - Corregir centrado visual de inputs
  * - Corregir visualización de múltiples tags/impuestos en many2manytags
+ * - Recuperar scroll vertical en popups, dropdowns, debug menu y overlays
+ * - Mantener scroll horizontal en listas con demasiada información
  * - Mantener exclusión de reportes contables
  */
 
@@ -72,6 +74,10 @@
     // Checkbox
     --mlv-check-border:        #98a2b3;
     --mlv-check-checked-bg:    #2563eb;
+
+    // Scroll / overlay
+    --mlv-overlay-max-height:  min(70vh, 640px);
+    --mlv-modal-max-height:    82vh;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -87,7 +93,7 @@
         border: 1px solid var(--mlv-border-color);
         border-radius: var(--mlv-border-radius);
         box-shadow: var(--mlv-shadow-table);
-        overflow-x: auto;
+        overflow-x: auto !important;
         overflow-y: visible;
 
         &::-webkit-scrollbar { height: 7px; width: 7px; }
@@ -98,6 +104,14 @@
             &:hover { background: #b6c0cf; }
         }
     }
+}
+
+// wrapper adicional para asegurar scroll horizontal real en listas anchas
+.o_list_view,
+.o_list_renderer,
+.o_list_renderer .table-responsive,
+.o_content .o_list_renderer {
+    overflow-x: auto;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -264,7 +278,6 @@
                     color: var(--mlv-text-link) !important;
                 }
 
-                // badges
                 .badge {
                     font-size: 0.75rem;
                     font-weight: 700;
@@ -322,7 +335,7 @@
                 &.o_monetary_cell,
                 &.o_integer_cell,
                 &.o_float_cell {
-                    text-align: right;
+                    text-align: center;
                     font-variant-numeric: tabular-nums;
                     font-family: var(--mlv-font-numeric);
                     font-size: 0.87rem;
@@ -375,6 +388,7 @@
             font-variant-numeric: tabular-nums;
             font-family: var(--mlv-font-numeric);
             color: #101828;
+            text-align: center;
         }
     }
 }
@@ -524,6 +538,7 @@
         height: auto;
         padding: 10px 12px;
         resize: vertical;
+        text-align: left;
     }
 
     select,
@@ -542,7 +557,6 @@
     .o_field_x2many_list_row {
 
         input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
-        textarea,
         select,
         .o_input {
             min-height: var(--mlv-control-height-compact);
@@ -552,6 +566,7 @@
             padding-right: 11px;
             border-radius: 10px;
             line-height: calc(var(--mlv-control-height-compact) - 3px);
+            text-align: center !important;
         }
 
         textarea,
@@ -561,6 +576,7 @@
             padding-top: 9px;
             padding-bottom: 9px;
             line-height: 1.4;
+            text-align: left !important;
         }
     }
 
@@ -603,6 +619,7 @@
         color: var(--mlv-control-text);
         box-shadow: var(--mlv-shadow-control);
         transition: border-color var(--mlv-transition), box-shadow var(--mlv-transition), background var(--mlv-transition);
+        text-align: center !important;
 
         &:hover {
             border-color: var(--mlv-control-border-hover);
@@ -617,7 +634,6 @@
         }
     }
 
-    // Pills de many2many tags más premium
     .o_field_many2manytags .badge,
     .o_field_many2manytags .o_tag {
         border-radius: 999px;
@@ -628,7 +644,6 @@
         color: #1d4ed8;
     }
 
-    // Iconos de acciones dentro del input
     .o_external_button,
     .o_field_widget .o_input_dropdown .btn,
     .o_field_widget .o-autocomplete .btn,
@@ -657,7 +672,8 @@
 .o_form_view .o_field_one2many td.o_float_cell {
 
     input,
-    .o_input {
+    .o_input,
+    select {
         text-align: center !important;
         font-variant-numeric: tabular-nums;
         font-feature-settings: "tnum" 1;
@@ -677,6 +693,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    text-align: center;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -719,14 +736,12 @@
     cursor: pointer;
 }
 
-// Fallback seguro sin depender solo de :has()
 .o_list_view td .o_field_many2manytags,
 .o_form_view .o_field_one2many td .o_field_many2manytags {
     white-space: normal !important;
     overflow: visible !important;
 }
 
-// Mejora adicional cuando el navegador soporte :has()
 .o_list_view td:has(.o_field_many2manytags),
 .o_form_view .o_field_one2many td:has(.o_field_many2manytags) {
     white-space: normal !important;
@@ -735,13 +750,17 @@
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Dropdowns / menus / popovers
+// Dropdowns / menus / popovers — FIX SCROLL VERTICAL
 // ─────────────────────────────────────────────────────────────────────────────
 .o-dropdown--menu,
 .dropdown-menu,
 .o_popover,
 .ui-autocomplete,
-.o-autocomplete--dropdown-menu {
+.o-autocomplete--dropdown-menu,
+.o_select_menu_menu,
+.o-select-menu__menu,
+.o_overlay_container .popover,
+.o_web_client .o_debug_manager .dropdown-menu {
     border: 1px solid #e4e7ec !important;
     border-radius: 16px !important;
     background: rgba(255,255,255,.98) !important;
@@ -750,13 +769,19 @@
         0 10px 20px rgba(16,24,40,.08),
         0 24px 48px rgba(16,24,40,.12) !important;
     padding: 8px !important;
-    overflow: hidden;
+    max-height: var(--mlv-overlay-max-height) !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
 }
 
 .o-dropdown--menu .dropdown-item,
 .dropdown-menu .dropdown-item,
 .ui-menu-item-wrapper,
-.o-autocomplete--dropdown-menu .dropdown-item {
+.o-autocomplete--dropdown-menu .dropdown-item,
+.o_select_menu_menu .dropdown-item,
+.o-select-menu__menu .dropdown-item {
     border-radius: 10px !important;
     font-size: 0.84rem;
     font-weight: 500;
@@ -770,6 +795,52 @@
         background: #f5f8ff !important;
         color: #0f172a !important;
     }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Modales / popups — FIX SCROLL VERTICAL
+// ─────────────────────────────────────────────────────────────────────────────
+.modal,
+.o_dialog_container .modal,
+.o_overlay_container .modal {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+}
+
+.modal-dialog,
+.o_dialog_container .modal-dialog,
+.o_overlay_container .modal-dialog {
+    max-height: calc(100vh - 2rem);
+    display: flex;
+    align-items: flex-start;
+}
+
+.modal-content,
+.o_dialog_container .modal-content,
+.o_overlay_container .modal-content {
+    max-height: var(--mlv-modal-max-height);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.modal-body,
+.o_dialog_container .modal-body,
+.o_overlay_container .modal-body,
+.modal .o_view_controller,
+.o_dialog_container .o_view_controller {
+    overflow-y: auto !important;
+    overflow-x: auto !important;
+    max-height: calc(var(--mlv-modal-max-height) - 110px);
+    -webkit-overflow-scrolling: touch;
+}
+
+// Para formularios/listas dentro de popups
+.modal .o_list_renderer,
+.o_dialog_container .o_list_renderer,
+.o_overlay_container .o_list_renderer {
+    overflow-x: auto !important;
+    overflow-y: visible !important;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -793,14 +864,15 @@
 // ─────────────────────────────────────────────────────────────────────────────
 .o_form_view .o_field_one2many .o_list_renderer table.o_list_table,
 .o_form_view .o_field_widget .o_list_renderer table.o_list_table {
-    min-width: unset;
+    min-width: max-content;
     width: 100%;
-    table-layout: fixed;
+    table-layout: auto;
 }
 
 .o_form_view .o_field_one2many .o_list_renderer,
 .o_form_view .o_field_widget .o_list_renderer {
-    overflow-x: hidden;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
     box-shadow: none;
     border: 1px solid var(--mlv-border-color);
     border-radius: var(--mlv-border-radius);
@@ -840,6 +912,7 @@
             text-transform: inherit !important;
             vertical-align: middle !important;
             box-shadow: none !important;
+            text-align: inherit !important;
         }
     }
 
