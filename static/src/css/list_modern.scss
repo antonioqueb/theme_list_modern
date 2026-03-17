@@ -1,12 +1,13 @@
 /**
- * Modern List View Theme v3.2 - Odoo 19
+ * Modern List View Theme v3.3 - Odoo 19
  * Alphaqueb Consulting SAS
  *
  * Objetivo:
  * - Mantener la tabla elegante
  * - Modernizar inputs, selects, many2one, dropdowns y widgets editables
  * - Eliminar look “old-school blue”
- * - Mejorar peso visual, contraste y estados focus/hover
+ * - Quitar efecto azul de focus en inputs
+ * - Mejorar peso visual, contraste y estados hover
  * - Corregir centrado visual de inputs
  * - Corregir visualización de múltiples tags/impuestos en many2manytags
  * - Recuperar scroll vertical en popups, dropdowns, debug menu y overlays
@@ -46,7 +47,9 @@
 
     --mlv-shadow-table:    0 1px 2px rgba(16, 24, 40, .04), 0 12px 32px rgba(16, 24, 40, .06);
     --mlv-shadow-control:  0 1px 2px rgba(16, 24, 40, .04);
-    --mlv-shadow-focus:    0 0 0 4px rgba(37, 99, 235, 0.12);
+
+    // Focus neutral, sin azul
+    --mlv-shadow-focus:    none;
 
     --mlv-transition:      160ms ease;
 
@@ -67,7 +70,7 @@
     --mlv-control-bg-hover:        #ffffff;
     --mlv-control-border:          #d0d7e2;
     --mlv-control-border-hover:    #b7c1d1;
-    --mlv-control-border-focus:    #2563eb;
+    --mlv-control-border-focus:    #d0d7e2;
     --mlv-control-text:            #101828;
     --mlv-control-placeholder:     #98a2b3;
 
@@ -516,8 +519,8 @@
 
         &:focus,
         &:focus-visible {
-            border-color: var(--mlv-control-border-focus);
-            box-shadow: var(--mlv-shadow-focus);
+            border-color: var(--mlv-control-border);
+            box-shadow: none;
             outline: none;
             background: #fff;
         }
@@ -627,8 +630,8 @@
 
         &:focus,
         &:focus-visible {
-            border-color: var(--mlv-control-border-focus);
-            box-shadow: var(--mlv-shadow-focus);
+            border-color: var(--mlv-control-border);
+            box-shadow: none;
             outline: none;
             background: #fff;
         }
