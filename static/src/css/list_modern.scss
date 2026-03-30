@@ -1,18 +1,6 @@
 /**
- * Modern List View Theme v3.3 - Odoo 19
+ * Modern List View Theme v3.4 - Odoo 19
  * Alphaqueb Consulting SAS
- *
- * Objetivo:
- * - Mantener la tabla elegante
- * - Modernizar inputs, selects, many2one, dropdowns y widgets editables
- * - Eliminar look “old-school blue”
- * - Quitar efecto azul de focus en inputs
- * - Mejorar peso visual, contraste y estados hover
- * - Corregir centrado visual de inputs
- * - Corregir visualización de múltiples tags/impuestos en many2manytags
- * - Recuperar scroll vertical en popups, dropdowns, debug menu y overlays
- * - Mantener scroll horizontal en listas con demasiada información
- * - Mantener exclusión de reportes contables
  */
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -662,6 +650,24 @@
             text-decoration: none;
         }
     }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Fix: texto invisible en inputs char/text en modo edición
+// ─────────────────────────────────────────────────────────────────────────────
+.o_list_view .o_selected_row td .o_field_widget input,
+.o_list_view .o_selected_row td .o_field_widget .o_input,
+.o_list_view .o_selected_row td .o_field_char input,
+.o_list_view .o_selected_row td .o_field_text input,
+.o_list_view .o_selected_row td .o_field_many2one input,
+.o_list_view .o_selected_row td input:not([type="checkbox"]),
+.o_form_view .o_field_one2many .o_selected_row td input:not([type="checkbox"]),
+.o_form_view .o_field_one2many .o_selected_row td .o_field_widget input,
+.o_form_view .o_field_many2many .o_selected_row td input:not([type="checkbox"]),
+.o_form_view .o_field_many2many .o_selected_row td .o_field_widget input {
+    color: var(--mlv-control-text) !important;
+    -webkit-text-fill-color: var(--mlv-control-text) !important;
+    opacity: 1 !important;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
