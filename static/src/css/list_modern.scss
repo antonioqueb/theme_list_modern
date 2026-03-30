@@ -1,5 +1,5 @@
 /**
- * Modern List View Theme v3.5 - Odoo 19
+ * Modern List View Theme v3.6 - Odoo 19
  * Alphaqueb Consulting SAS
  */
 
@@ -10,7 +10,6 @@
     --mlv-font-base: Inter, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     --mlv-font-numeric: Inter, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 
-    // Tabla
     --mlv-bg-table:              #ffffff;
     --mlv-bg-header:             #fbfcfe;
     --mlv-bg-row:                #ffffff;
@@ -36,9 +35,7 @@
     --mlv-shadow-table:    0 1px 2px rgba(16, 24, 40, .04), 0 12px 32px rgba(16, 24, 40, .06);
     --mlv-shadow-control:  0 1px 2px rgba(16, 24, 40, .04);
 
-    // Focus neutral, sin azul
     --mlv-shadow-focus:    none;
-
     --mlv-transition:      160ms ease;
 
     --mlv-header-size:     0.79rem;
@@ -50,7 +47,6 @@
     --mlv-header-py:       13px;
     --mlv-row-height:      54px;
 
-    // Controles
     --mlv-control-height:          38px;
     --mlv-control-height-compact:  34px;
     --mlv-control-radius:          12px;
@@ -62,11 +58,9 @@
     --mlv-control-text:            #101828;
     --mlv-control-placeholder:     #98a2b3;
 
-    // Checkbox
     --mlv-check-border:        #98a2b3;
     --mlv-check-checked-bg:    #2563eb;
 
-    // Scroll / overlay
     --mlv-overlay-max-height:  min(70vh, 640px);
     --mlv-modal-max-height:    82vh;
 }
@@ -97,7 +91,6 @@
     }
 }
 
-// wrapper adicional para asegurar scroll horizontal real en listas anchas
 .o_list_view,
 .o_list_renderer,
 .o_list_renderer .table-responsive,
@@ -152,13 +145,8 @@
                 background: var(--mlv-border-color);
             }
 
-            &:first-child {
-                border-top-left-radius: var(--mlv-border-radius);
-            }
-
-            &:last-child {
-                border-top-right-radius: var(--mlv-border-radius);
-            }
+            &:first-child { border-top-left-radius: var(--mlv-border-radius); }
+            &:last-child  { border-top-right-radius: var(--mlv-border-radius); }
 
             &.o_column_sortable {
                 cursor: pointer;
@@ -173,33 +161,24 @@
 
                 &:hover {
                     color: var(--mlv-accent-strong);
-
-                    .o_list_column_title {
-                        color: var(--mlv-accent-strong);
-                    }
+                    .o_list_column_title { color: var(--mlv-accent-strong); }
                 }
             }
 
             &.o_list_record_selector,
             &.o_list_selection_box {
-                width: 44px;
-                min-width: 44px;
-                max-width: 44px;
+                width: 44px; min-width: 44px; max-width: 44px;
                 text-align: center;
                 padding: var(--mlv-header-py) 8px;
             }
 
             &.o_list_optional_columns_dropdown {
-                width: 40px;
-                min-width: 40px;
+                width: 40px; min-width: 40px;
                 text-align: center;
                 padding: var(--mlv-header-py) 6px;
             }
 
-            i.fa {
-                font-size: 0.75rem;
-                color: #98a2b3;
-            }
+            i.fa { font-size: 0.75rem; color: #98a2b3; }
         }
     }
 
@@ -210,21 +189,14 @@
             transition: background var(--mlv-transition), box-shadow var(--mlv-transition);
             border-bottom: 1px solid var(--mlv-border-color);
 
-            &:nth-child(even) {
-                background: var(--mlv-bg-row-alt);
-            }
+            &:nth-child(even) { background: var(--mlv-bg-row-alt); }
 
-            &:not(.o_selected_row):hover {
-                background: var(--mlv-bg-row-hover);
-            }
+            &:not(.o_selected_row):hover { background: var(--mlv-bg-row-hover); }
 
             &.o_selected_row {
                 background: var(--mlv-bg-row-selected);
                 box-shadow: inset 3px 0 0 var(--mlv-accent);
-
-                &:hover {
-                    background: var(--mlv-bg-row-selected-hover);
-                }
+                &:hover { background: var(--mlv-bg-row-selected-hover); }
             }
 
             &.o_is_dirty {
@@ -243,43 +215,25 @@
                 border-bottom: 1px solid var(--mlv-border-color);
 
                 &.o_list_record_selector {
-                    width: 44px;
-                    min-width: 44px;
-                    max-width: 44px;
+                    width: 44px; min-width: 44px; max-width: 44px;
                     text-align: center;
                     padding: var(--mlv-cell-py) 8px;
                 }
 
-                a,
-                .o_form_uri {
+                a, .o_form_uri {
                     color: var(--mlv-text-link);
                     text-decoration: none;
                     font-weight: 600;
                     transition: color var(--mlv-transition), opacity var(--mlv-transition);
-
-                    &:hover {
-                        color: var(--mlv-text-link-hover);
-                        text-decoration: none;
-                        opacity: .88;
-                    }
+                    &:hover { color: var(--mlv-text-link-hover); text-decoration: none; opacity: .88; }
                 }
 
-                .text-primary,
-                .link-primary {
-                    color: var(--mlv-text-link) !important;
-                }
+                .text-primary, .link-primary { color: var(--mlv-text-link) !important; }
 
                 .badge {
-                    font-size: 0.75rem;
-                    font-weight: 700;
-                    letter-spacing: 0.02em;
-                    padding: 5px 12px;
-                    border-radius: 999px;
-                    border: 1px solid transparent;
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 4px;
-                    line-height: 1.3;
+                    font-size: 0.75rem; font-weight: 700; letter-spacing: 0.02em;
+                    padding: 5px 12px; border-radius: 999px; border: 1px solid transparent;
+                    display: inline-flex; align-items: center; gap: 4px; line-height: 1.3;
                     box-shadow: inset 0 1px 0 rgba(255,255,255,.5);
                 }
 
@@ -293,93 +247,58 @@
                 .badge.text-bg-light,   .badge.bg-light      { background: #fcfcfd !important; color: #475467 !important; border-color: #eaecf0 !important; }
 
                 .o_tag {
-                    font-size: 0.73rem;
-                    font-weight: 700;
-                    letter-spacing: 0.01em;
-                    padding: 4px 10px;
-                    border-radius: 999px;
-                    border: 1px solid transparent;
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 4px;
-                    line-height: 1.35;
-
-                    &:not([style*="background"]) {
-                        background: #eef4ff;
-                        color: #3538cd;
-                        border-color: #c7d7fe;
-                    }
+                    font-size: 0.73rem; font-weight: 700; letter-spacing: 0.01em;
+                    padding: 4px 10px; border-radius: 999px; border: 1px solid transparent;
+                    display: inline-flex; align-items: center; gap: 4px; line-height: 1.35;
+                    &:not([style*="background"]) { background: #eef4ff; color: #3538cd; border-color: #c7d7fe; }
                 }
 
                 .o_status {
-                    width: 11px;
-                    height: 11px;
-                    border-radius: 50%;
-                    display: inline-block;
+                    width: 11px; height: 11px; border-radius: 50%; display: inline-block;
                     box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.05);
-
                     &.o_status_green { background: #12b76a; }
                     &.o_status_red   { background: #f04438; }
                     &.o_status_grey  { background: #d0d5dd; }
                 }
 
-                &.o_monetary_cell,
-                &.o_integer_cell,
-                &.o_float_cell {
+                &.o_monetary_cell, &.o_integer_cell, &.o_float_cell {
                     text-align: center;
                     font-variant-numeric: tabular-nums;
                     font-family: var(--mlv-font-numeric);
-                    font-size: 0.87rem;
-                    font-weight: 700;
-                    color: #101828;
+                    font-size: 0.87rem; font-weight: 700; color: #101828;
                 }
 
                 .o_field_boolean .o_checkbox,
                 .o_field_boolean input[type="checkbox"] {
-                    accent-color: var(--mlv-accent);
-                    width: 16px;
-                    height: 16px;
+                    accent-color: var(--mlv-accent); width: 16px; height: 16px;
                 }
 
-                .o_list_record_remove,
-                .o_btn_list_action {
-                    opacity: 0;
-                    transition: opacity var(--mlv-transition);
+                .o_list_record_remove, .o_btn_list_action {
+                    opacity: 0; transition: opacity var(--mlv-transition);
                 }
             }
 
             &:hover td .o_list_record_remove,
-            &:hover td .o_btn_list_action {
-                opacity: 1;
-            }
+            &:hover td .o_btn_list_action { opacity: 1; }
         }
 
-        tr.o_list_add_record td {
-            padding: 12px var(--mlv-cell-px);
-            font-size: var(--mlv-cell-size);
-        }
+        tr.o_list_add_record td { padding: 12px var(--mlv-cell-px); font-size: var(--mlv-cell-size); }
 
         tr.o_list_no_content_helper td,
         .o_nocontent_help td {
             padding: 60px var(--mlv-cell-px);
-            text-align: center;
-            color: var(--mlv-text-muted);
-            font-size: 0.92rem;
+            text-align: center; color: var(--mlv-text-muted); font-size: 0.92rem;
         }
     }
 
     tfoot tr {
         border-top: 1px solid var(--mlv-border-header);
         background: #ffffff;
-
         td {
             padding: var(--mlv-cell-py) var(--mlv-cell-px);
-            font-weight: 800;
-            font-size: 0.90rem;
-            font-variant-numeric: tabular-nums;
-            font-family: var(--mlv-font-numeric);
-            color: #101828;
-            text-align: center;
+            font-weight: 800; font-size: 0.90rem;
+            font-variant-numeric: tabular-nums; font-family: var(--mlv-font-numeric);
+            color: #101828; text-align: center;
         }
     }
 }
@@ -388,56 +307,30 @@
 // Checkboxes
 // ─────────────────────────────────────────────────────────────────────────────
 .o_list_view input[type="checkbox"] {
-    appearance: none;
-    -webkit-appearance: none;
-    width: 16px;
-    height: 16px;
-    border: 1.5px solid var(--mlv-check-border);
-    border-radius: 5px;
-    background: #fff;
-    cursor: pointer;
+    appearance: none; -webkit-appearance: none;
+    width: 16px; height: 16px;
+    border: 1.5px solid var(--mlv-check-border); border-radius: 5px;
+    background: #fff; cursor: pointer;
     transition: all var(--mlv-transition);
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    vertical-align: middle;
-    flex-shrink: 0;
+    position: relative; display: inline-flex; align-items: center; justify-content: center;
+    vertical-align: middle; flex-shrink: 0;
     box-shadow: 0 1px 1px rgba(16, 24, 40, 0.03);
 
     &:checked {
-        background: var(--mlv-check-checked-bg);
-        border-color: var(--mlv-check-checked-bg);
-
+        background: var(--mlv-check-checked-bg); border-color: var(--mlv-check-checked-bg);
         &::after {
-            content: '';
-            display: block;
-            width: 9px;
-            height: 6px;
-            border-left: 2px solid #fff;
-            border-bottom: 2px solid #fff;
+            content: ''; display: block; width: 9px; height: 6px;
+            border-left: 2px solid #fff; border-bottom: 2px solid #fff;
             transform: rotate(-45deg) translate(1px, -1px);
         }
     }
 
     &:indeterminate {
-        background: var(--mlv-check-checked-bg);
-        border-color: var(--mlv-check-checked-bg);
-
-        &::after {
-            content: '';
-            display: block;
-            width: 7px;
-            height: 2px;
-            background: #fff;
-            border-radius: 1px;
-        }
+        background: var(--mlv-check-checked-bg); border-color: var(--mlv-check-checked-bg);
+        &::after { content: ''; display: block; width: 7px; height: 2px; background: #fff; border-radius: 1px; }
     }
 
-    &:hover:not(:checked) {
-        border-color: var(--mlv-accent);
-        background: var(--mlv-accent-soft);
-    }
+    &:hover:not(:checked) { border-color: var(--mlv-accent); background: var(--mlv-accent-soft); }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -445,24 +338,16 @@
 // ─────────────────────────────────────────────────────────────────────────────
 .o_list_view .o_list_add_record a,
 .o_list_view a.o_list_add_optional_columns {
-    font-size: 0.84rem;
-    font-weight: 700;
-    color: #344054;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 0;
+    font-size: 0.84rem; font-weight: 700; color: #344054; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px; padding: 6px 0;
     transition: color var(--mlv-transition), opacity var(--mlv-transition);
-
-    &:hover {
-        color: #101828;
-        opacity: .9;
-    }
+    &:hover { color: #101828; opacity: .9; }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CONTROLES MODERNOS
+// color / -webkit-text-fill-color / caret-color forzados en regla base
+// para garantizar texto visible en TODOS los estados de edición.
 // ─────────────────────────────────────────────────────────────────────────────
 .o_list_view,
 .o_form_view .o_field_one2many,
@@ -480,7 +365,9 @@
         border: 1.5px solid var(--mlv-control-border);
         border-radius: var(--mlv-control-radius);
         background: linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%);
-        color: var(--mlv-control-text);
+        color: var(--mlv-control-text) !important;
+        -webkit-text-fill-color: var(--mlv-control-text) !important;
+        caret-color: var(--mlv-control-text) !important;
         font-family: var(--mlv-font-base);
         font-size: 0.84rem;
         font-weight: 500;
@@ -491,11 +378,11 @@
             border-color var(--mlv-transition),
             box-shadow var(--mlv-transition),
             background var(--mlv-transition),
-            color var(--mlv-transition),
             transform var(--mlv-transition);
 
         &::placeholder {
-            color: var(--mlv-control-placeholder);
+            color: var(--mlv-control-placeholder) !important;
+            -webkit-text-fill-color: var(--mlv-control-placeholder) !important;
             opacity: 1;
             font-weight: 400;
         }
@@ -516,7 +403,8 @@
         &:disabled,
         &[disabled] {
             background: #f8fafc;
-            color: #98a2b3;
+            color: #98a2b3 !important;
+            -webkit-text-fill-color: #98a2b3 !important;
             border-color: #e4e7ec;
             cursor: not-allowed;
             box-shadow: none;
@@ -525,11 +413,8 @@
 
     textarea,
     textarea.o_input {
-        min-height: 92px;
-        height: auto;
-        padding: 10px 12px;
-        resize: vertical;
-        text-align: left;
+        min-height: 92px; height: auto;
+        padding: 10px 12px; resize: vertical; text-align: left;
     }
 
     select,
@@ -553,8 +438,7 @@
             min-height: var(--mlv-control-height-compact);
             height: var(--mlv-control-height-compact);
             font-size: 0.82rem;
-            padding-left: 11px;
-            padding-right: 11px;
+            padding-left: 11px; padding-right: 11px;
             border-radius: 10px;
             line-height: calc(var(--mlv-control-height-compact) - 3px);
             text-align: center !important;
@@ -562,12 +446,9 @@
 
         textarea,
         textarea.o_input {
-            min-height: 76px;
-            height: auto;
-            padding-top: 9px;
-            padding-bottom: 9px;
-            line-height: 1.4;
-            text-align: left !important;
+            min-height: 76px; height: auto;
+            padding-top: 9px; padding-bottom: 9px;
+            line-height: 1.4; text-align: left !important;
         }
     }
 
@@ -607,32 +488,26 @@
         border: 1.5px solid var(--mlv-control-border);
         border-radius: var(--mlv-control-radius);
         background: linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%);
-        color: var(--mlv-control-text);
+        color: var(--mlv-control-text) !important;
+        -webkit-text-fill-color: var(--mlv-control-text) !important;
+        caret-color: var(--mlv-control-text) !important;
         box-shadow: var(--mlv-shadow-control);
         transition: border-color var(--mlv-transition), box-shadow var(--mlv-transition), background var(--mlv-transition);
         text-align: center !important;
 
-        &:hover {
-            border-color: var(--mlv-control-border-hover);
-        }
+        &:hover { border-color: var(--mlv-control-border-hover); }
 
         &:focus,
         &:focus-visible {
             border-color: var(--mlv-control-border);
-            box-shadow: none;
-            outline: none;
-            background: #fff;
+            box-shadow: none; outline: none; background: #fff;
         }
     }
 
     .o_field_many2manytags .badge,
     .o_field_many2manytags .o_tag {
-        border-radius: 999px;
-        font-weight: 700;
-        padding: 4px 10px;
-        border: 1px solid #d6e4ff;
-        background: #eef4ff;
-        color: #1d4ed8;
+        border-radius: 999px; font-weight: 700; padding: 4px 10px;
+        border: 1px solid #d6e4ff; background: #eef4ff; color: #1d4ed8;
     }
 
     .o_external_button,
@@ -640,39 +515,10 @@
     .o_field_widget .o-autocomplete .btn,
     .o_field_widget .o-autocomplete button,
     .o_field_widget .btn-link {
-        color: #667085 !important;
-        border-radius: 10px;
+        color: #667085 !important; border-radius: 10px;
         transition: background var(--mlv-transition), color var(--mlv-transition), opacity var(--mlv-transition);
-
-        &:hover {
-            color: #101828 !important;
-            background: #f2f4f7;
-            text-decoration: none;
-        }
+        &:hover { color: #101828 !important; background: #f2f4f7; text-decoration: none; }
     }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Fix: texto invisible en inputs char/text en modo edición
-// ─────────────────────────────────────────────────────────────────────────────
-.o_list_view td .o_field_widget input:not([type="checkbox"]),
-.o_list_view td .o_field_widget .o_input,
-.o_list_view td input.o_input,
-.o_list_view td .o_field_char input,
-.o_list_view td .o_field_text input,
-.o_list_view td .o_field_many2one input,
-.o_list_view td .o-autocomplete input,
-.o_list_view td .o_input_dropdown input,
-.o_form_view .o_field_one2many td .o_field_widget input:not([type="checkbox"]),
-.o_form_view .o_field_one2many td .o_field_widget .o_input,
-.o_form_view .o_field_one2many td .o-autocomplete input,
-.o_form_view .o_field_one2many td .o_input_dropdown input,
-.o_form_view .o_field_many2many td .o_field_widget input:not([type="checkbox"]),
-.o_form_view .o_field_many2many td .o_field_widget .o_input {
-    color: var(--mlv-control-text) !important;
-    -webkit-text-fill-color: var(--mlv-control-text) !important;
-    opacity: 1 !important;
-    caret-color: var(--mlv-control-text) !important;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -684,17 +530,13 @@
 .o_form_view .o_field_one2many td.o_monetary_cell,
 .o_form_view .o_field_one2many td.o_integer_cell,
 .o_form_view .o_field_one2many td.o_float_cell {
-
-    input,
-    .o_input,
-    select {
+    input, .o_input, select {
         text-align: center !important;
         font-variant-numeric: tabular-nums;
         font-feature-settings: "tnum" 1;
         font-family: var(--mlv-font-numeric);
         font-weight: 700;
-        padding-left: 12px !important;
-        padding-right: 12px !important;
+        padding-left: 12px !important; padding-right: 12px !important;
     }
 }
 
@@ -704,63 +546,44 @@
 .o_form_view .o_field_one2many td.o_monetary_cell .o_field_widget,
 .o_form_view .o_field_one2many td.o_float_cell .o_field_widget,
 .o_form_view .o_field_one2many td.o_integer_cell .o_field_widget {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
+    display: flex; align-items: center; justify-content: center; text-align: center;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Many2many tags / impuestos: mostrar varias etiquetas
+// Many2many tags / impuestos
 // ─────────────────────────────────────────────────────────────────────────────
 .o_list_view .o_field_many2manytags,
 .o_form_view .o_field_one2many .o_field_many2manytags {
-    display: flex !important;
-    align-items: center;
-    flex-wrap: wrap !important;
-    gap: 6px;
-    min-height: var(--mlv-control-height-compact);
-    height: auto !important;
-    white-space: normal !important;
-    overflow: visible !important;
-    padding-top: 4px;
-    padding-bottom: 4px;
+    display: flex !important; align-items: center; flex-wrap: wrap !important; gap: 6px;
+    min-height: var(--mlv-control-height-compact); height: auto !important;
+    white-space: normal !important; overflow: visible !important;
+    padding-top: 4px; padding-bottom: 4px;
 }
 
 .o_list_view .o_field_many2manytags .o_tag,
 .o_list_view .o_field_many2manytags .badge,
 .o_form_view .o_field_one2many .o_field_many2manytags .o_tag,
 .o_form_view .o_field_one2many .o_field_many2manytags .badge {
-    max-width: none !important;
-    white-space: nowrap;
-    overflow: visible !important;
-    text-overflow: unset !important;
-    flex: 0 0 auto;
+    max-width: none !important; white-space: nowrap;
+    overflow: visible !important; text-overflow: unset !important; flex: 0 0 auto;
 }
 
 .o_list_view .o_field_many2manytags .o_delete,
 .o_list_view .o_field_many2manytags .o_tag_badge_text + span,
 .o_form_view .o_field_one2many .o_field_many2manytags .o_delete,
 .o_form_view .o_field_one2many .o_field_many2manytags .o_tag_badge_text + span {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    margin-left: 6px;
-    border-radius: 999px;
-    cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    margin-left: 6px; border-radius: 999px; cursor: pointer;
 }
 
 .o_list_view td .o_field_many2manytags,
 .o_form_view .o_field_one2many td .o_field_many2manytags {
-    white-space: normal !important;
-    overflow: visible !important;
+    white-space: normal !important; overflow: visible !important;
 }
 
 .o_list_view td:has(.o_field_many2manytags),
 .o_form_view .o_field_one2many td:has(.o_field_many2manytags) {
-    white-space: normal !important;
-    overflow: visible !important;
-    text-overflow: unset !important;
+    white-space: normal !important; overflow: visible !important; text-overflow: unset !important;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -775,19 +598,13 @@
 .o-select-menu__menu,
 .o_overlay_container .popover,
 .o_web_client .o_debug_manager .dropdown-menu {
-    border: 1px solid #e4e7ec !important;
-    border-radius: 16px !important;
-    background: rgba(255,255,255,.98) !important;
-    backdrop-filter: blur(12px);
-    box-shadow:
-        0 10px 20px rgba(16,24,40,.08),
-        0 24px 48px rgba(16,24,40,.12) !important;
+    border: 1px solid #e4e7ec !important; border-radius: 16px !important;
+    background: rgba(255,255,255,.98) !important; backdrop-filter: blur(12px);
+    box-shadow: 0 10px 20px rgba(16,24,40,.08), 0 24px 48px rgba(16,24,40,.12) !important;
     padding: 8px !important;
     max-height: var(--mlv-overlay-max-height) !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
+    overflow-y: auto !important; overflow-x: hidden !important;
+    overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
 }
 
 .o-dropdown--menu .dropdown-item,
@@ -796,19 +613,10 @@
 .o-autocomplete--dropdown-menu .dropdown-item,
 .o_select_menu_menu .dropdown-item,
 .o-select-menu__menu .dropdown-item {
-    border-radius: 10px !important;
-    font-size: 0.84rem;
-    font-weight: 500;
-    color: #101828 !important;
-    padding: 9px 11px !important;
+    border-radius: 10px !important; font-size: 0.84rem; font-weight: 500;
+    color: #101828 !important; padding: 9px 11px !important;
     transition: background var(--mlv-transition), color var(--mlv-transition);
-
-    &:hover,
-    &:focus,
-    &.active {
-        background: #f5f8ff !important;
-        color: #0f172a !important;
-    }
+    &:hover, &:focus, &.active { background: #f5f8ff !important; color: #0f172a !important; }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -817,25 +625,19 @@
 .modal,
 .o_dialog_container .modal,
 .o_overlay_container .modal {
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
+    overflow-y: auto !important; overflow-x: hidden !important;
 }
 
 .modal-dialog,
 .o_dialog_container .modal-dialog,
 .o_overlay_container .modal-dialog {
-    max-height: calc(100vh - 2rem);
-    display: flex;
-    align-items: flex-start;
+    max-height: calc(100vh - 2rem); display: flex; align-items: flex-start;
 }
 
 .modal-content,
 .o_dialog_container .modal-content,
 .o_overlay_container .modal-content {
-    max-height: var(--mlv-modal-max-height);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+    max-height: var(--mlv-modal-max-height); display: flex; flex-direction: column; overflow: hidden;
 }
 
 .modal-body,
@@ -843,34 +645,25 @@
 .o_overlay_container .modal-body,
 .modal .o_view_controller,
 .o_dialog_container .o_view_controller {
-    overflow-y: auto !important;
-    overflow-x: auto !important;
+    overflow-y: auto !important; overflow-x: auto !important;
     max-height: calc(var(--mlv-modal-max-height) - 110px);
     -webkit-overflow-scrolling: touch;
 }
 
-// Para formularios/listas dentro de popups
 .modal .o_list_renderer,
 .o_dialog_container .o_list_renderer,
 .o_overlay_container .o_list_renderer {
-    overflow-x: auto !important;
-    overflow-y: visible !important;
+    overflow-x: auto !important; overflow-y: visible !important;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Columnas opcionales toggle
 // ─────────────────────────────────────────────────────────────────────────────
 .o_list_optional_columns_dropdown .o_optional_columns_dropdown_toggle {
-    color: #667085;
-    cursor: pointer;
+    color: #667085; cursor: pointer;
     transition: color var(--mlv-transition), background var(--mlv-transition);
-    padding: 4px 7px;
-    border-radius: 9px;
-
-    &:hover {
-        color: #101828;
-        background: #f2f4f7;
-    }
+    padding: 4px 7px; border-radius: 9px;
+    &:hover { color: #101828; background: #f2f4f7; }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -878,19 +671,14 @@
 // ─────────────────────────────────────────────────────────────────────────────
 .o_form_view .o_field_one2many .o_list_renderer table.o_list_table,
 .o_form_view .o_field_widget .o_list_renderer table.o_list_table {
-    min-width: max-content;
-    width: 100%;
-    table-layout: auto;
+    min-width: max-content; width: 100%; table-layout: auto;
 }
 
 .o_form_view .o_field_one2many .o_list_renderer,
 .o_form_view .o_field_widget .o_list_renderer {
-    overflow-x: auto !important;
-    overflow-y: visible !important;
-    box-shadow: none;
-    border: 1px solid var(--mlv-border-color);
-    border-radius: var(--mlv-border-radius);
-    background: #fff;
+    overflow-x: auto !important; overflow-y: visible !important;
+    box-shadow: none; border: 1px solid var(--mlv-border-color);
+    border-radius: var(--mlv-border-radius); background: #fff;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -902,58 +690,36 @@
 .o_account_financial_report {
 
     table {
-        min-width: unset !important;
-        width: auto !important;
-        max-width: 100% !important;
-        table-layout: auto !important;
-        font-family: inherit !important;
-        font-size: inherit !important;
+        min-width: unset !important; width: auto !important;
+        max-width: 100% !important; table-layout: auto !important;
+        font-family: inherit !important; font-size: inherit !important;
 
-        thead tr th,
-        tbody tr td,
-        tfoot tr td {
-            white-space: normal !important;
-            overflow: visible !important;
-            text-overflow: unset !important;
-            padding: inherit !important;
-            font-size: inherit !important;
-            font-weight: inherit !important;
-            font-variant-numeric: inherit !important;
-            color: inherit !important;
-            background: inherit !important;
-            border-bottom: inherit !important;
-            letter-spacing: inherit !important;
-            text-transform: inherit !important;
-            vertical-align: middle !important;
-            box-shadow: none !important;
+        thead tr th, tbody tr td, tfoot tr td {
+            white-space: normal !important; overflow: visible !important;
+            text-overflow: unset !important; padding: inherit !important;
+            font-size: inherit !important; font-weight: inherit !important;
+            font-variant-numeric: inherit !important; color: inherit !important;
+            background: inherit !important; border-bottom: inherit !important;
+            letter-spacing: inherit !important; text-transform: inherit !important;
+            vertical-align: middle !important; box-shadow: none !important;
             text-align: inherit !important;
         }
     }
 
-    .o_list_renderer {
-        overflow-x: hidden !important;
-        box-shadow: none !important;
-    }
+    .o_list_renderer { overflow-x: hidden !important; box-shadow: none !important; }
 
     input, select, textarea, .o_input, .o-autocomplete input {
         all: revert !important;
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Centrado reportes contables
-// ─────────────────────────────────────────────────────────────────────────────
 .o_account_report_scroll_container {
-    display: block !important;
-    width: fit-content !important;
-    max-width: 100% !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
-    overflow-x: auto !important;
+    display: block !important; width: fit-content !important;
+    max-width: 100% !important; margin-left: auto !important;
+    margin-right: auto !important; overflow-x: auto !important;
 
     > div {
-        display: flex !important;
-        align-items: flex-start !important;
+        display: flex !important; align-items: flex-start !important;
         justify-content: center !important;
     }
 }
