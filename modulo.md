@@ -1,10 +1,34 @@
+## ./__init__.py
+```py
+```
+
+## ./__manifest__.py
+```py
+{
+    'name': 'Modern List View Theme',
+    'version': '19.0.1.0.0',
+    'summary': 'Tema moderno global para todas las vistas de lista en Odoo 19',
+    'category': 'Technical',
+    'author': 'Alphaqueb Consulting SAS',
+    'depends': ['web'],
+    'assets': {
+        'web.assets_backend': [
+            'theme_list_modern/static/src/css/list_modern.scss',
+            'theme_list_modern/static/src/js/list_renderer_patch.js',
+        ],
+    },
+    'installable': True,
+    'application': False,
+    'auto_install': False,
+    'license': 'LGPL-3',
+}
+```
+
+## ./static/src/css/list_modern.scss
+```scss
 /**
- * Modern List View Theme v3.7 - Odoo 19
+ * Modern List View Theme v3.6 - Odoo 19
  * Alphaqueb Consulting SAS
- *
- * v3.7 fixes:
- *  - Exclude span.o_input from control styling (Odoo 19 monetary ghost overlay)
- *  - Force text color on :focus/:focus-visible to beat form_input_borders collision
  */
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -67,15 +91,6 @@
 
     --mlv-overlay-max-height:  min(70vh, 640px);
     --mlv-modal-max-height:    82vh;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Mixin: force text visible in all states
-// ─────────────────────────────────────────────────────────────────────────────
-@mixin mlv-text-always-visible {
-    color: var(--mlv-control-text) !important;
-    -webkit-text-fill-color: var(--mlv-control-text) !important;
-    caret-color: var(--mlv-control-text) !important;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -358,12 +373,9 @@
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CONTROLES MODERNOS (v3.7)
-//
-// KEY FIX: Changed ".o_input" → "input.o_input" to avoid styling
-// <span class="o_input"> used by Odoo 19 monetary widget as ghost overlay.
-// Added explicit span.o_input neutralizer.
-// Added @include mlv-text-always-visible on :focus states.
+// CONTROLES MODERNOS
+// color / -webkit-text-fill-color / caret-color forzados en regla base
+// para garantizar texto visible en TODOS los estados de edición.
 // ─────────────────────────────────────────────────────────────────────────────
 .o_list_view,
 .o_form_view .o_field_one2many,
@@ -372,7 +384,7 @@
     input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
     textarea,
     select,
-    input.o_input {
+    .o_input {
         appearance: none;
         -webkit-appearance: none;
         min-height: var(--mlv-control-height);
@@ -381,7 +393,9 @@
         border: 1.5px solid var(--mlv-control-border);
         border-radius: var(--mlv-control-radius);
         background: linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%);
-        @include mlv-text-always-visible;
+        color: var(--mlv-control-text) !important;
+        -webkit-text-fill-color: var(--mlv-control-text) !important;
+        caret-color: var(--mlv-control-text) !important;
         font-family: var(--mlv-font-base);
         font-size: 0.84rem;
         font-weight: 500;
@@ -412,7 +426,6 @@
             box-shadow: none;
             outline: none;
             background: #fff;
-            @include mlv-text-always-visible;
         }
 
         &:disabled,
@@ -424,20 +437,6 @@
             cursor: not-allowed;
             box-shadow: none;
         }
-    }
-
-    // v3.7: Neutralize span.o_input (Odoo 19 monetary ghost overlay)
-    span.o_input {
-        border: none !important;
-        background: none !important;
-        background-image: none !important;
-        box-shadow: none !important;
-        min-height: unset !important;
-        height: auto !important;
-        padding: 0 !important;
-        border-radius: 0 !important;
-        appearance: unset !important;
-        -webkit-appearance: unset !important;
     }
 
     textarea,
@@ -463,7 +462,7 @@
 
         input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
         select,
-        input.o_input {
+        .o_input {
             min-height: var(--mlv-control-height-compact);
             height: var(--mlv-control-height-compact);
             font-size: 0.82rem;
@@ -471,26 +470,6 @@
             border-radius: 10px;
             line-height: calc(var(--mlv-control-height-compact) - 3px);
             text-align: center !important;
-            @include mlv-text-always-visible;
-
-            &:focus,
-            &:focus-visible {
-                @include mlv-text-always-visible;
-            }
-        }
-
-        // Keep span.o_input neutralized at cell level too
-        span.o_input {
-            border: none !important;
-            background: none !important;
-            background-image: none !important;
-            box-shadow: none !important;
-            min-height: unset !important;
-            height: auto !important;
-            padding: 0 !important;
-            border-radius: 0 !important;
-            appearance: unset !important;
-            -webkit-appearance: unset !important;
         }
 
         textarea,
@@ -498,12 +477,6 @@
             min-height: 76px; height: auto;
             padding-top: 9px; padding-bottom: 9px;
             line-height: 1.4; text-align: left !important;
-            @include mlv-text-always-visible;
-
-            &:focus,
-            &:focus-visible {
-                @include mlv-text-always-visible;
-            }
         }
     }
 
@@ -543,7 +516,9 @@
         border: 1.5px solid var(--mlv-control-border);
         border-radius: var(--mlv-control-radius);
         background: linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%);
-        @include mlv-text-always-visible;
+        color: var(--mlv-control-text) !important;
+        -webkit-text-fill-color: var(--mlv-control-text) !important;
+        caret-color: var(--mlv-control-text) !important;
         box-shadow: var(--mlv-shadow-control);
         transition: border-color var(--mlv-transition), box-shadow var(--mlv-transition), background var(--mlv-transition);
         text-align: center !important;
@@ -554,7 +529,6 @@
         &:focus-visible {
             border-color: var(--mlv-control-border);
             box-shadow: none; outline: none; background: #fff;
-            @include mlv-text-always-visible;
         }
     }
 
@@ -584,7 +558,7 @@
 .o_form_view .o_field_one2many td.o_monetary_cell,
 .o_form_view .o_field_one2many td.o_integer_cell,
 .o_form_view .o_field_one2many td.o_float_cell {
-    input, input.o_input, select {
+    input, .o_input, select {
         text-align: center !important;
         font-variant-numeric: tabular-nums;
         font-feature-settings: "tnum" 1;
@@ -776,4 +750,117 @@
         display: flex !important; align-items: flex-start !important;
         justify-content: center !important;
     }
+}```
+
+## ./static/src/js/list_renderer_patch.js
+```js
+/**
+ * Modern List View Theme v2 - ListRenderer Patch
+ * Alphaqueb Consulting SAS
+ *
+ * Estrategia v2:
+ *  - table-layout: auto + min-width: max-content forzado vía JS
+ *  - El contenedor scrollea horizontalmente, la tabla nunca comprime columnas
+ *  - Tooltips en celdas truncadas (solo cuando la celda sí está truncada)
+ *  - Sin measureText hacky — dejamos que el browser calcule anchos reales
+ *  - Listas embebidas en formularios (one2many/many2many) quedan excluidas
+ *  - Reportes contables (balance, libro mayor, etc.) quedan excluidos
+ */
+import { patch } from "@web/core/utils/patch";
+import { ListRenderer } from "@web/views/list/list_renderer";
+import { onMounted, onPatched } from "@odoo/owl";
+
+// ─── Detectar tabla que NO debe ser afectada por el tema ─────────────────────
+function isEmbeddedList(tableEl) {
+    return !!tableEl.closest(
+        ".o_form_view .o_field_one2many, " +
+        ".o_form_view .o_field_many2many, " +
+        ".o_form_view .o_field_widget .o_list_renderer, " +
+        // Reportes contables: el contenedor real del HTML generado por account_reports
+        ".o_account_report_scroll_container, " +
+        ".o_account_reports_page, " +
+        ".o_account_report, " +
+        ".o_account_financial_report, " +
+        ".o_account_report_line, " +
+        "[class*='account_report'], " +
+        ".o_report_layout"
+    );
 }
+
+// ─── Forzar tabla no comprimida ───────────────────────────────────────────────
+function enforceTableExpansion(tableEl) {
+    if (!tableEl) return;
+    if (isEmbeddedList(tableEl)) return;
+
+    tableEl.style.tableLayout = "auto";
+    tableEl.style.minWidth = "max-content";
+    tableEl.style.width = "100%";
+
+    tableEl.querySelectorAll("thead th").forEach((th) => {
+        th.style.whiteSpace = "nowrap";
+        th.style.overflow = "visible";
+        th.style.textOverflow = "clip";
+    });
+
+    tableEl.querySelectorAll("tbody td:not(.o_list_record_selector)").forEach((td) => {
+        td.style.whiteSpace = "nowrap";
+        td.style.maxWidth = "";
+    });
+}
+
+// ─── Tooltips en celdas truncadas ────────────────────────────────────────────
+function addCellTooltips(tableEl) {
+    if (!tableEl) return;
+    if (isEmbeddedList(tableEl)) return;
+
+    tableEl.querySelectorAll("tbody td:not(.o_list_record_selector)").forEach((td) => {
+        if (td._mlvTip) return;
+        td._mlvTip = true;
+        td.addEventListener("mouseenter", () => {
+            if (td.scrollWidth > td.clientWidth + 2) {
+                td.setAttribute("title", td.textContent.trim());
+            } else {
+                td.removeAttribute("title");
+            }
+        });
+    });
+}
+
+// ─── Patch al ListRenderer ────────────────────────────────────────────────────
+patch(ListRenderer.prototype, {
+    setup() {
+        super.setup(...arguments);
+
+        const apply = () => {
+            const tableEl = this.el?.querySelector("table.o_list_table");
+            if (tableEl && !isEmbeddedList(tableEl)) {
+                enforceTableExpansion(tableEl);
+                addCellTooltips(tableEl);
+            }
+        };
+
+        onMounted(() => apply());
+        onPatched(() => setTimeout(apply, 0));
+    },
+});
+
+// ─── MutationObserver global — captura tablas que entren al DOM ───────────────
+const _mo = new MutationObserver((mutations) => {
+    for (const m of mutations) {
+        for (const node of m.addedNodes) {
+            if (node.nodeType !== Node.ELEMENT_NODE) continue;
+            const tables = node.classList?.contains("o_list_table")
+                ? [node]
+                : [...(node.querySelectorAll?.(".o_list_table") || [])];
+            for (const t of tables) {
+                enforceTableExpansion(t);
+                addCellTooltips(t);
+            }
+        }
+    }
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+    _mo.observe(document.body, { childList: true, subtree: true });
+}, { once: true });```
+
