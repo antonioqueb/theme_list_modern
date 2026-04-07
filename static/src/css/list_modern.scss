@@ -1,8 +1,11 @@
 /**
- * Modern List View Theme v3.7 - Odoo 19
+ * Modern List View Theme v3.8 - Odoo 19
  * Alphaqueb Consulting SAS
  *
- * v3.7 fixes:
+ * v3.8 fixes:
+ *  - Columnas de lista principal y embebida respetan ancho mínimo por header
+ *  - Tablas usan width:max-content + min-width:100%
+ *  - Columnas técnicas pequeñas y fijas (selector, handle, optional, acciones, stone toggle)
  *  - Exclude span.o_input from control styling (Odoo 19 monetary ghost overlay)
  *  - Force text color on :focus/:focus-visible to beat form_input_borders collision
  */
@@ -116,9 +119,9 @@
 // ─────────────────────────────────────────────────────────────────────────────
 .o_list_view table.o_list_table,
 .o_list_renderer table.o_list_table {
-    table-layout: auto;
-    min-width: max-content;
-    width: 100%;
+    table-layout: auto !important;
+    width: max-content !important;
+    min-width: 100% !important;
     border-collapse: separate;
     border-spacing: 0;
     font-family: var(--mlv-font-base);
@@ -147,6 +150,9 @@
             position: relative;
             cursor: default;
             transition: color var(--mlv-transition), background var(--mlv-transition);
+            box-sizing: border-box;
+            width: auto !important;
+            min-width: fit-content;
 
             &:not(:last-child)::after {
                 content: '';
@@ -180,15 +186,19 @@
 
             &.o_list_record_selector,
             &.o_list_selection_box {
-                width: 44px; min-width: 44px; max-width: 44px;
+                width: 30px !important;
+                min-width: 30px !important;
+                max-width: 30px !important;
                 text-align: center;
-                padding: var(--mlv-header-py) 8px;
+                padding: var(--mlv-header-py) 4px !important;
             }
 
             &.o_list_optional_columns_dropdown {
-                width: 40px; min-width: 40px;
+                width: 30px !important;
+                min-width: 30px !important;
+                max-width: 30px !important;
                 text-align: center;
-                padding: var(--mlv-header-py) 6px;
+                padding: var(--mlv-header-py) 4px !important;
             }
 
             i.fa { font-size: 0.75rem; color: #98a2b3; }
@@ -226,11 +236,15 @@
                 overflow: hidden;
                 text-overflow: ellipsis;
                 border-bottom: 1px solid var(--mlv-border-color);
+                box-sizing: border-box;
+                width: auto;
 
                 &.o_list_record_selector {
-                    width: 44px; min-width: 44px; max-width: 44px;
+                    width: 30px !important;
+                    min-width: 30px !important;
+                    max-width: 30px !important;
                     text-align: center;
-                    padding: var(--mlv-cell-py) 8px;
+                    padding: var(--mlv-cell-py) 4px !important;
                 }
 
                 a, .o_form_uri {
@@ -317,6 +331,93 @@
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Columnas técnicas pequeñas y fijas
+// ─────────────────────────────────────────────────────────────────────────────
+.o_list_view table.o_list_table,
+.o_list_renderer table.o_list_table {
+    th.o_list_record_selector,
+    td.o_list_record_selector,
+    th.o_list_selection_box,
+    td.o_list_selection_box {
+        width: 30px !important;
+        min-width: 30px !important;
+        max-width: 30px !important;
+        padding-left: 4px !important;
+        padding-right: 4px !important;
+        text-align: center !important;
+    }
+
+    th.o_list_optional_columns_dropdown,
+    td.o_list_optional_columns_dropdown {
+        width: 30px !important;
+        min-width: 30px !important;
+        max-width: 30px !important;
+        padding-left: 4px !important;
+        padding-right: 4px !important;
+        text-align: center !important;
+    }
+
+    th.o_handle_cell,
+    td.o_handle_cell,
+    th.o_row_handle,
+    td.o_row_handle,
+    th[class*="handle"],
+    td[class*="handle"] {
+        width: 30px !important;
+        min-width: 30px !important;
+        max-width: 30px !important;
+        padding-left: 4px !important;
+        padding-right: 4px !important;
+        text-align: center !important;
+    }
+
+    th[data-name="is_stone_expanded"],
+    td[name="is_stone_expanded"],
+    td.o_data_cell[data-name="is_stone_expanded"],
+    .o_stone_toggle_column {
+        width: 30px !important;
+        min-width: 30px !important;
+        max-width: 30px !important;
+        padding-left: 4px !important;
+        padding-right: 4px !important;
+        text-align: center !important;
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Stone button
+// ─────────────────────────────────────────────────────────────────────────────
+.stone-field-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-width: 0;
+    position: relative;
+}
+
+.stone-toggle-btn {
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px !important;
+    max-width: 24px !important;
+    padding: 0 !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    line-height: 1;
+    position: relative;
+}
+
+.stone-count-badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    transform: translate(40%, -35%);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Checkboxes
 // ─────────────────────────────────────────────────────────────────────────────
 .o_list_view input[type="checkbox"] {
@@ -358,12 +459,7 @@
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CONTROLES MODERNOS (v3.7)
-//
-// KEY FIX: Changed ".o_input" → "input.o_input" to avoid styling
-// <span class="o_input"> used by Odoo 19 monetary widget as ghost overlay.
-// Added explicit span.o_input neutralizer.
-// Added @include mlv-text-always-visible on :focus states.
+// CONTROLES MODERNOS
 // ─────────────────────────────────────────────────────────────────────────────
 .o_list_view,
 .o_form_view .o_field_one2many,
@@ -426,7 +522,6 @@
         }
     }
 
-    // v3.7: Neutralize span.o_input (Odoo 19 monetary ghost overlay)
     span.o_input {
         border: none !important;
         background: none !important;
@@ -479,7 +574,6 @@
             }
         }
 
-        // Keep span.o_input neutralized at cell level too
         span.o_input {
             border: none !important;
             background: none !important;
@@ -724,15 +818,22 @@
 // Lista embebida en formulario
 // ─────────────────────────────────────────────────────────────────────────────
 .o_form_view .o_field_one2many .o_list_renderer table.o_list_table,
+.o_form_view .o_field_many2many .o_list_renderer table.o_list_table,
 .o_form_view .o_field_widget .o_list_renderer table.o_list_table {
-    min-width: max-content; width: 100%; table-layout: auto;
+    table-layout: auto !important;
+    width: max-content !important;
+    min-width: 100% !important;
 }
 
 .o_form_view .o_field_one2many .o_list_renderer,
+.o_form_view .o_field_many2many .o_list_renderer,
 .o_form_view .o_field_widget .o_list_renderer {
-    overflow-x: auto !important; overflow-y: visible !important;
-    box-shadow: none; border: 1px solid var(--mlv-border-color);
-    border-radius: var(--mlv-border-radius); background: #fff;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    box-shadow: none;
+    border: 1px solid var(--mlv-border-color);
+    border-radius: var(--mlv-border-radius);
+    background: #fff;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

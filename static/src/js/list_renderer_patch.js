@@ -1,12 +1,12 @@
 /**
- * Modern List View Theme v3.2 - Stable column width enforcement
+ * Modern List View Theme v3.3 - Stable column width enforcement
  * Alphaqueb Consulting SAS
  *
  * Objetivo:
  *  - Respetar SIEMPRE el ancho mínimo necesario para mostrar completo
  *    el nombre del encabezado de cada columna.
  *  - Aplicar tanto a listas principales como a listas embebidas.
- *  - Evitar que columnas técnicas (drag, favorito, selector, acciones)
+ *  - Evitar que columnas técnicas (drag, favorito, selector, acciones, stone toggle)
  *    se expandan incorrectamente.
  *  - Recalcular automáticamente al abrir la vista, sin requerir refresh manual.
  */
@@ -38,6 +38,7 @@ function isSpecialColumn(th) {
 
     const className = th.className || "";
     const text = (th.textContent || "").trim();
+    const dataName = th.getAttribute("data-name") || th.getAttribute("name") || "";
 
     return (
         th.classList.contains("o_list_record_selector") ||
@@ -49,7 +50,8 @@ function isSpecialColumn(th) {
         th.classList.contains("o_list_action") ||
         th.classList.contains("o_list_record_remove") ||
         th.classList.contains("o_field_handle") ||
-        th.classList.contains("o_field_widget") && th.querySelector(".o_handle_cell, .o_row_handle") ||
+        th.classList.contains("o_stone_toggle_column") ||
+        dataName === "is_stone_expanded" ||
         /handle|selector|selection|optional|remove|action/.test(className) ||
         (
             text === "" &&
@@ -67,19 +69,20 @@ function isSpecialColumn(th) {
 }
 
 function getSpecialColumnWidth(th) {
-    if (!th) return null;
+    if (!th) return 30;
 
     const className = th.className || "";
+    const dataName = th.getAttribute("data-name") || th.getAttribute("name") || "";
 
     if (
         th.classList.contains("o_list_record_selector") ||
         th.classList.contains("o_list_selection_box")
     ) {
-        return 44;
+        return 30;
     }
 
     if (th.classList.contains("o_list_optional_columns_dropdown")) {
-        return 40;
+        return 30;
     }
 
     if (
@@ -87,7 +90,14 @@ function getSpecialColumnWidth(th) {
         th.classList.contains("o_row_handle") ||
         /handle/.test(className)
     ) {
-        return 36;
+        return 30;
+    }
+
+    if (
+        th.classList.contains("o_stone_toggle_column") ||
+        dataName === "is_stone_expanded"
+    ) {
+        return 30;
     }
 
     if (
@@ -95,10 +105,10 @@ function getSpecialColumnWidth(th) {
         th.classList.contains("o_list_action") ||
         /remove|action/.test(className)
     ) {
-        return 40;
+        return 30;
     }
 
-    return 40;
+    return 30;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -114,11 +124,12 @@ function enforceTableExpansion(tableEl) {
     tableEl.querySelectorAll("thead th").forEach((th) => {
         if (isSpecialColumn(th)) {
             const fixedWidth = getSpecialColumnWidth(th);
-            if (fixedWidth) {
-                th.style.minWidth = `${fixedWidth}px`;
-                th.style.width = `${fixedWidth}px`;
-                th.style.maxWidth = `${fixedWidth}px`;
-            }
+            th.style.minWidth = `${fixedWidth}px`;
+            th.style.width = `${fixedWidth}px`;
+            th.style.maxWidth = `${fixedWidth}px`;
+            th.style.whiteSpace = "nowrap";
+            th.style.overflow = "hidden";
+            th.style.textOverflow = "clip";
             return;
         }
 
@@ -126,6 +137,7 @@ function enforceTableExpansion(tableEl) {
         th.style.overflow = "visible";
         th.style.textOverflow = "clip";
         th.style.width = "auto";
+        th.style.maxWidth = "none";
     });
 
     tableEl.querySelectorAll("tbody td:not(.o_list_record_selector)").forEach((td) => {
@@ -177,17 +189,16 @@ function syncColumnMinimumWidths(tableEl) {
 
         if (isSpecialColumn(th)) {
             const fixedWidth = getSpecialColumnWidth(th);
-            if (fixedWidth) {
-                th.style.minWidth = `${fixedWidth}px`;
-                th.style.width = `${fixedWidth}px`;
-                th.style.maxWidth = `${fixedWidth}px`;
 
-                columnCells.forEach((cell) => {
-                    cell.style.minWidth = `${fixedWidth}px`;
-                    cell.style.width = `${fixedWidth}px`;
-                    cell.style.maxWidth = `${fixedWidth}px`;
-                });
-            }
+            th.style.minWidth = `${fixedWidth}px`;
+            th.style.width = `${fixedWidth}px`;
+            th.style.maxWidth = `${fixedWidth}px`;
+
+            columnCells.forEach((cell) => {
+                cell.style.minWidth = `${fixedWidth}px`;
+                cell.style.width = `${fixedWidth}px`;
+                cell.style.maxWidth = `${fixedWidth}px`;
+            });
             return;
         }
 
