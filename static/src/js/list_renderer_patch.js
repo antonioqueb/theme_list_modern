@@ -1,13 +1,14 @@
 /**
- * Modern List View Theme v3.1 - Column width enforcement
+ * Modern List View Theme v3.2 - Stable column width enforcement
  * Alphaqueb Consulting SAS
  *
  * Objetivo:
  *  - Respetar SIEMPRE el ancho mínimo necesario para mostrar completo
  *    el nombre del encabezado de cada columna.
- *  - Aplicar tanto a listas principales como a listas embebidas en formularios.
- *  - Permitir scroll horizontal real, en lugar de comprimir columnas.
- *  - Excluir únicamente reportes/tablas especiales que no deben tocarse.
+ *  - Aplicar tanto a listas principales como a listas embebidas.
+ *  - Evitar que columnas técnicas (drag, favorito, selector, acciones)
+ *    se expandan incorrectamente.
+ *  - Recalcular automáticamente al abrir la vista, sin requerir refresh manual.
  */
 
 import { patch } from "@web/core/utils/patch";
@@ -15,9 +16,7 @@ import { ListRenderer } from "@web/views/list/list_renderer";
 import { onMounted, onPatched } from "@odoo/owl";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Detectar tablas que NO deben ser afectadas
-// SOLO excluimos reportes/tablas especiales.
-// YA NO excluimos one2many/many2many embebidos.
+// Tablas que NO deben tocarse
 // ─────────────────────────────────────────────────────────────────────────────
 function shouldSkipTable(tableEl) {
     return !!tableEl.closest(
@@ -31,16 +30,79 @@ function shouldSkipTable(tableEl) {
     );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Columnas técnicas que NO deben entrar al cálculo dinámico
+// ─────────────────────────────────────────────────────────────────────────────
 function isSpecialColumn(th) {
+    if (!th) return true;
+
+    const className = th.className || "";
+    const text = (th.textContent || "").trim();
+
     return (
         th.classList.contains("o_list_record_selector") ||
         th.classList.contains("o_list_selection_box") ||
-        th.classList.contains("o_list_optional_columns_dropdown")
+        th.classList.contains("o_list_optional_columns_dropdown") ||
+        th.classList.contains("o_handle_cell") ||
+        th.classList.contains("o_row_handle") ||
+        th.classList.contains("o_list_button") ||
+        th.classList.contains("o_list_action") ||
+        th.classList.contains("o_list_record_remove") ||
+        th.classList.contains("o_field_handle") ||
+        th.classList.contains("o_field_widget") && th.querySelector(".o_handle_cell, .o_row_handle") ||
+        /handle|selector|selection|optional|remove|action/.test(className) ||
+        (
+            text === "" &&
+            (
+                th.querySelector(".fa") ||
+                th.querySelector(".oi") ||
+                th.querySelector(".btn") ||
+                th.querySelector(".dropdown-toggle") ||
+                th.querySelector(".o_handle_cell") ||
+                th.querySelector(".o_row_handle") ||
+                th.querySelector(".o_optional_columns_dropdown_toggle")
+            )
+        )
     );
 }
 
+function getSpecialColumnWidth(th) {
+    if (!th) return null;
+
+    const className = th.className || "";
+
+    if (
+        th.classList.contains("o_list_record_selector") ||
+        th.classList.contains("o_list_selection_box")
+    ) {
+        return 44;
+    }
+
+    if (th.classList.contains("o_list_optional_columns_dropdown")) {
+        return 40;
+    }
+
+    if (
+        th.classList.contains("o_handle_cell") ||
+        th.classList.contains("o_row_handle") ||
+        /handle/.test(className)
+    ) {
+        return 36;
+    }
+
+    if (
+        th.classList.contains("o_list_record_remove") ||
+        th.classList.contains("o_list_action") ||
+        /remove|action/.test(className)
+    ) {
+        return 40;
+    }
+
+    return 40;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
-// Forzar tabla expandible real
+// Tabla expandible real
 // ─────────────────────────────────────────────────────────────────────────────
 function enforceTableExpansion(tableEl) {
     if (!tableEl || shouldSkipTable(tableEl)) return;
@@ -50,6 +112,16 @@ function enforceTableExpansion(tableEl) {
     tableEl.style.minWidth = "100%";
 
     tableEl.querySelectorAll("thead th").forEach((th) => {
+        if (isSpecialColumn(th)) {
+            const fixedWidth = getSpecialColumnWidth(th);
+            if (fixedWidth) {
+                th.style.minWidth = `${fixedWidth}px`;
+                th.style.width = `${fixedWidth}px`;
+                th.style.maxWidth = `${fixedWidth}px`;
+            }
+            return;
+        }
+
         th.style.whiteSpace = "nowrap";
         th.style.overflow = "visible";
         th.style.textOverflow = "clip";
@@ -62,13 +134,13 @@ function enforceTableExpansion(tableEl) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Calcular ancho mínimo real del header
+// Medir ancho real del header
 // ─────────────────────────────────────────────────────────────────────────────
 function getHeaderRequiredWidth(th) {
-    const target =
+    const titleEl =
         th.querySelector(".o_list_column_title") ||
-        th.querySelector(".o_dropdown_button") ||
-        th.firstElementChild ||
+        th.querySelector(".o_column_title") ||
+        th.querySelector("span") ||
         th;
 
     const thStyle = window.getComputedStyle(th);
@@ -77,16 +149,16 @@ function getHeaderRequiredWidth(th) {
     const borderLeft = parseFloat(thStyle.borderLeftWidth || "0");
     const borderRight = parseFloat(thStyle.borderRightWidth || "0");
 
-    const contentWidth = Math.ceil(target.scrollWidth || th.scrollWidth || 0);
+    const titleWidth = Math.ceil(titleEl.scrollWidth || titleEl.getBoundingClientRect().width || 0);
 
-    const sortIcon = th.querySelector(".fa, .oi, .o_sort_indicator");
-    const iconExtra = sortIcon ? 18 : 8;
+    const hasSortIcon = !!th.querySelector(".fa, .oi, .o_sort_indicator");
+    const extra = hasSortIcon ? 18 : 8;
 
-    return Math.ceil(contentWidth + padLeft + padRight + borderLeft + borderRight + iconExtra);
+    return Math.ceil(titleWidth + padLeft + padRight + borderLeft + borderRight + extra);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Aplicar ancho mínimo por columna
+// Aplicar anchos por columna
 // ─────────────────────────────────────────────────────────────────────────────
 function syncColumnMinimumWidths(tableEl) {
     if (!tableEl || shouldSkipTable(tableEl)) return;
@@ -99,43 +171,55 @@ function syncColumnMinimumWidths(tableEl) {
 
     // Reset previo
     headerCells.forEach((th, index) => {
-        if (isSpecialColumn(th)) return;
+        const columnCells = tableEl.querySelectorAll(
+            `tbody tr > *:nth-child(${index + 1}), tfoot tr > *:nth-child(${index + 1})`
+        );
+
+        if (isSpecialColumn(th)) {
+            const fixedWidth = getSpecialColumnWidth(th);
+            if (fixedWidth) {
+                th.style.minWidth = `${fixedWidth}px`;
+                th.style.width = `${fixedWidth}px`;
+                th.style.maxWidth = `${fixedWidth}px`;
+
+                columnCells.forEach((cell) => {
+                    cell.style.minWidth = `${fixedWidth}px`;
+                    cell.style.width = `${fixedWidth}px`;
+                    cell.style.maxWidth = `${fixedWidth}px`;
+                });
+            }
+            return;
+        }
 
         th.style.minWidth = "";
         th.style.width = "";
         th.style.maxWidth = "";
 
-        tableEl
-            .querySelectorAll(`tbody tr > *:nth-child(${index + 1}), tfoot tr > *:nth-child(${index + 1})`)
-            .forEach((cell) => {
-                cell.style.minWidth = "";
-                cell.style.width = "";
-                cell.style.maxWidth = "";
-            });
+        columnCells.forEach((cell) => {
+            cell.style.minWidth = "";
+            cell.style.width = "";
+            cell.style.maxWidth = "";
+        });
     });
 
     requestAnimationFrame(() => {
         headerCells.forEach((th, index) => {
             if (isSpecialColumn(th)) return;
 
-            // Puedes subir este piso si quieres más aire visual
             const minWidth = Math.max(getHeaderRequiredWidth(th), 140);
-
             if (!minWidth || Number.isNaN(minWidth)) return;
 
             th.style.minWidth = `${minWidth}px`;
             th.style.width = `${minWidth}px`;
             th.style.maxWidth = "none";
 
-            tableEl
-                .querySelectorAll(`tbody tr > *:nth-child(${index + 1}), tfoot tr > *:nth-child(${index + 1})`)
-                .forEach((cell) => {
-                    if (cell.classList.contains("o_list_record_selector")) return;
-
-                    cell.style.minWidth = `${minWidth}px`;
-                    cell.style.width = `${minWidth}px`;
-                    cell.style.maxWidth = "none";
-                });
+            tableEl.querySelectorAll(
+                `tbody tr > *:nth-child(${index + 1}), tfoot tr > *:nth-child(${index + 1})`
+            ).forEach((cell) => {
+                cell.style.minWidth = `${minWidth}px`;
+                cell.style.width = `${minWidth}px`;
+                cell.style.maxWidth = "none";
+            });
         });
     });
 }
@@ -161,18 +245,33 @@ function addCellTooltips(tableEl) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Aplicación global
+// Aplicación completa
 // ─────────────────────────────────────────────────────────────────────────────
 function applyModernListSizing(tableEl) {
     if (!tableEl || shouldSkipTable(tableEl)) return;
-
     enforceTableExpansion(tableEl);
     syncColumnMinimumWidths(tableEl);
     addCellTooltips(tableEl);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Patch al ListRenderer
+// Reaplicar en fases para esperar estabilización real del DOM
+// ─────────────────────────────────────────────────────────────────────────────
+function scheduleApply(tableEl) {
+    if (!tableEl || shouldSkipTable(tableEl)) return;
+
+    const run = () => applyModernListSizing(tableEl);
+
+    run();
+    requestAnimationFrame(run);
+    requestAnimationFrame(() => requestAnimationFrame(run));
+    setTimeout(run, 60);
+    setTimeout(run, 180);
+    setTimeout(run, 320);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Patch ListRenderer
 // ─────────────────────────────────────────────────────────────────────────────
 patch(ListRenderer.prototype, {
     setup() {
@@ -181,20 +280,17 @@ patch(ListRenderer.prototype, {
         const apply = () => {
             const tableEl = this.el?.querySelector("table.o_list_table");
             if (tableEl) {
-                applyModernListSizing(tableEl);
+                scheduleApply(tableEl);
             }
         };
 
         onMounted(() => apply());
-        onPatched(() => {
-            setTimeout(apply, 0);
-            requestAnimationFrame(apply);
-        });
+        onPatched(() => apply());
     },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MutationObserver global
+// Observer global
 // ─────────────────────────────────────────────────────────────────────────────
 const _mo = new MutationObserver((mutations) => {
     for (const m of mutations) {
@@ -206,18 +302,15 @@ const _mo = new MutationObserver((mutations) => {
                 : [...(node.querySelectorAll?.(".o_list_table") || [])];
 
             for (const t of tables) {
-                applyModernListSizing(t);
+                scheduleApply(t);
             }
         }
     }
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Reaplicar globalmente
-// ─────────────────────────────────────────────────────────────────────────────
 function reapplyAllTables() {
     document.querySelectorAll("table.o_list_table").forEach((tableEl) => {
-        applyModernListSizing(tableEl);
+        scheduleApply(tableEl);
     });
 }
 
@@ -230,9 +323,9 @@ document.addEventListener(
             window.requestAnimationFrame(reapplyAllTables);
         });
 
-        // Reaplicar por si la fuente o el render tardan un poco
         setTimeout(reapplyAllTables, 150);
-        setTimeout(reapplyAllTables, 500);
+        setTimeout(reapplyAllTables, 400);
+        setTimeout(reapplyAllTables, 800);
     },
     { once: true }
 );
