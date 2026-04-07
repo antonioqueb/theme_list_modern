@@ -1,12 +1,13 @@
 /**
- * Modern List View Theme v3 - Column width enforcement
+ * Modern List View Theme v3.1 - Column width enforcement
  * Alphaqueb Consulting SAS
  *
  * Objetivo:
  *  - Respetar SIEMPRE el ancho mínimo necesario para mostrar completo
  *    el nombre del encabezado de cada columna.
+ *  - Aplicar tanto a listas principales como a listas embebidas en formularios.
  *  - Permitir scroll horizontal real, en lugar de comprimir columnas.
- *  - Mantener exclusiones para listas embebidas y reportes contables.
+ *  - Excluir únicamente reportes/tablas especiales que no deben tocarse.
  */
 
 import { patch } from "@web/core/utils/patch";
@@ -14,13 +15,12 @@ import { ListRenderer } from "@web/views/list/list_renderer";
 import { onMounted, onPatched } from "@odoo/owl";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Detectar tabla que NO debe ser afectada por el tema
+// Detectar tablas que NO deben ser afectadas
+// SOLO excluimos reportes/tablas especiales.
+// YA NO excluimos one2many/many2many embebidos.
 // ─────────────────────────────────────────────────────────────────────────────
-function isEmbeddedList(tableEl) {
+function shouldSkipTable(tableEl) {
     return !!tableEl.closest(
-        ".o_form_view .o_field_one2many, " +
-        ".o_form_view .o_field_many2many, " +
-        ".o_form_view .o_field_widget .o_list_renderer, " +
         ".o_account_report_scroll_container, " +
         ".o_account_reports_page, " +
         ".o_account_report, " +
@@ -40,10 +40,10 @@ function isSpecialColumn(th) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Tabla expandible real
+// Forzar tabla expandible real
 // ─────────────────────────────────────────────────────────────────────────────
 function enforceTableExpansion(tableEl) {
-    if (!tableEl || isEmbeddedList(tableEl)) return;
+    if (!tableEl || shouldSkipTable(tableEl)) return;
 
     tableEl.style.tableLayout = "auto";
     tableEl.style.width = "max-content";
@@ -62,7 +62,7 @@ function enforceTableExpansion(tableEl) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Calcular ancho mínimo de header
+// Calcular ancho mínimo real del header
 // ─────────────────────────────────────────────────────────────────────────────
 function getHeaderRequiredWidth(th) {
     const target =
@@ -77,10 +77,8 @@ function getHeaderRequiredWidth(th) {
     const borderLeft = parseFloat(thStyle.borderLeftWidth || "0");
     const borderRight = parseFloat(thStyle.borderRightWidth || "0");
 
-    // Ancho real del contenido interno
     const contentWidth = Math.ceil(target.scrollWidth || th.scrollWidth || 0);
 
-    // Espacio extra por íconos de sort / respiración visual
     const sortIcon = th.querySelector(".fa, .oi, .o_sort_indicator");
     const iconExtra = sortIcon ? 18 : 8;
 
@@ -91,7 +89,7 @@ function getHeaderRequiredWidth(th) {
 // Aplicar ancho mínimo por columna
 // ─────────────────────────────────────────────────────────────────────────────
 function syncColumnMinimumWidths(tableEl) {
-    if (!tableEl || isEmbeddedList(tableEl)) return;
+    if (!tableEl || shouldSkipTable(tableEl)) return;
 
     const headerRow = tableEl.querySelector("thead tr");
     if (!headerRow) return;
@@ -99,37 +97,41 @@ function syncColumnMinimumWidths(tableEl) {
     const headerCells = [...headerRow.children];
     if (!headerCells.length) return;
 
-    // Reset previo para medir sin arrastre
+    // Reset previo
     headerCells.forEach((th, index) => {
         if (isSpecialColumn(th)) return;
 
         th.style.minWidth = "";
         th.style.width = "";
+        th.style.maxWidth = "";
 
-        tableEl.querySelectorAll(`tbody tr > *:nth-child(${index + 1}), tfoot tr > *:nth-child(${index + 1})`)
+        tableEl
+            .querySelectorAll(`tbody tr > *:nth-child(${index + 1}), tfoot tr > *:nth-child(${index + 1})`)
             .forEach((cell) => {
                 cell.style.minWidth = "";
                 cell.style.width = "";
+                cell.style.maxWidth = "";
             });
     });
 
-    // Medimos después del render estable
     requestAnimationFrame(() => {
         headerCells.forEach((th, index) => {
             if (isSpecialColumn(th)) return;
 
-            const minWidth = Math.max(getHeaderRequiredWidth(th), 160);
+            // Puedes subir este piso si quieres más aire visual
+            const minWidth = Math.max(getHeaderRequiredWidth(th), 140);
+
             if (!minWidth || Number.isNaN(minWidth)) return;
 
-            // Header
             th.style.minWidth = `${minWidth}px`;
             th.style.width = `${minWidth}px`;
             th.style.maxWidth = "none";
 
-            // Celdas del cuerpo y footer en la misma columna
-            tableEl.querySelectorAll(`tbody tr > *:nth-child(${index + 1}), tfoot tr > *:nth-child(${index + 1})`)
+            tableEl
+                .querySelectorAll(`tbody tr > *:nth-child(${index + 1}), tfoot tr > *:nth-child(${index + 1})`)
                 .forEach((cell) => {
                     if (cell.classList.contains("o_list_record_selector")) return;
+
                     cell.style.minWidth = `${minWidth}px`;
                     cell.style.width = `${minWidth}px`;
                     cell.style.maxWidth = "none";
@@ -142,7 +144,7 @@ function syncColumnMinimumWidths(tableEl) {
 // Tooltips en celdas truncadas
 // ─────────────────────────────────────────────────────────────────────────────
 function addCellTooltips(tableEl) {
-    if (!tableEl || isEmbeddedList(tableEl)) return;
+    if (!tableEl || shouldSkipTable(tableEl)) return;
 
     tableEl.querySelectorAll("tbody td:not(.o_list_record_selector)").forEach((td) => {
         if (td._mlvTip) return;
@@ -162,7 +164,8 @@ function addCellTooltips(tableEl) {
 // Aplicación global
 // ─────────────────────────────────────────────────────────────────────────────
 function applyModernListSizing(tableEl) {
-    if (!tableEl || isEmbeddedList(tableEl)) return;
+    if (!tableEl || shouldSkipTable(tableEl)) return;
+
     enforceTableExpansion(tableEl);
     syncColumnMinimumWidths(tableEl);
     addCellTooltips(tableEl);
@@ -210,7 +213,7 @@ const _mo = new MutationObserver((mutations) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Reaplicar en resize
+// Reaplicar globalmente
 // ─────────────────────────────────────────────────────────────────────────────
 function reapplyAllTables() {
     document.querySelectorAll("table.o_list_table").forEach((tableEl) => {
@@ -218,14 +221,18 @@ function reapplyAllTables() {
     });
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-    _mo.observe(document.body, { childList: true, subtree: true });
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+        _mo.observe(document.body, { childList: true, subtree: true });
 
-    window.addEventListener("resize", () => {
-        window.requestAnimationFrame(reapplyAllTables);
-    });
+        window.addEventListener("resize", () => {
+            window.requestAnimationFrame(reapplyAllTables);
+        });
 
-    // Reaplicar una vez más por si la fuente web termina de cargar después
-    setTimeout(reapplyAllTables, 150);
-    setTimeout(reapplyAllTables, 500);
-}, { once: true });
+        // Reaplicar por si la fuente o el render tardan un poco
+        setTimeout(reapplyAllTables, 150);
+        setTimeout(reapplyAllTables, 500);
+    },
+    { once: true }
+);
