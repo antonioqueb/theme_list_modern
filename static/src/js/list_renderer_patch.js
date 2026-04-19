@@ -1,8 +1,14 @@
 /**
- * Modern List View Theme v3.3 - Stable column width enforcement
+ * Modern List View Theme v3.4 - Stable column width enforcement
  * Alphaqueb Consulting SAS
  *
- * Objetivo:
+ * v3.4:
+ *  - Se agrega medición del contenido real de cada celda (no solo del header)
+ *    para que columnas con <select>, inputs o textos largos reciban el ancho
+ *    adecuado. Útil para widgets tipo price_level_selector donde el texto
+ *    de la opción seleccionada es mucho más largo que el título de la columna.
+ *
+ * v3.3:
  *  - Respetar SIEMPRE el ancho mínimo necesario para mostrar completo
  *    el nombre del encabezado de cada columna.
  *  - Aplicar tanto a listas principales como a listas embebidas.
@@ -170,6 +176,75 @@ function getHeaderRequiredWidth(th) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Medir texto arbitrario usando un span invisible con los estilos dados
+// ─────────────────────────────────────────────────────────────────────────────
+function measureText(text, styleSource) {
+    if (!text) return 0;
+    const measurer = document.createElement("span");
+    const cs = window.getComputedStyle(styleSource);
+    measurer.style.cssText = `
+        position: absolute;
+        visibility: hidden;
+        white-space: nowrap;
+        top: -9999px;
+        left: -9999px;
+        font-family: ${cs.fontFamily};
+        font-size: ${cs.fontSize};
+        font-weight: ${cs.fontWeight};
+        letter-spacing: ${cs.letterSpacing};
+        text-transform: ${cs.textTransform};
+    `;
+    measurer.textContent = text;
+    document.body.appendChild(measurer);
+    const width = Math.ceil(measurer.getBoundingClientRect().width);
+    document.body.removeChild(measurer);
+    return width;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Medir ancho real del contenido de una celda
+// ─────────────────────────────────────────────────────────────────────────────
+function getCellContentWidth(cell) {
+    if (!cell) return 0;
+
+    const cellStyle = window.getComputedStyle(cell);
+    const padLeft = parseFloat(cellStyle.paddingLeft || "0");
+    const padRight = parseFloat(cellStyle.paddingRight || "0");
+
+    let contentWidth = 0;
+
+    // Caso 1: <select> (widget price_level_selector, selection nativo, etc.)
+    const selectEl = cell.querySelector("select");
+    if (selectEl) {
+        // Medir el texto más largo entre todas las opciones (no solo la seleccionada)
+        // para evitar que al cambiar de opción se vea cortado.
+        let maxOptionWidth = 0;
+        for (let i = 0; i < selectEl.options.length; i++) {
+            const optText = selectEl.options[i].textContent || "";
+            const w = measureText(optText, selectEl);
+            if (w > maxOptionWidth) maxOptionWidth = w;
+        }
+        // +40 por el arrow del select y padding interno
+        contentWidth = maxOptionWidth + 40;
+    }
+
+    // Caso 2: input de texto / número / textarea
+    if (!contentWidth) {
+        const inputEl = cell.querySelector("input[type='text'], input[type='number'], textarea");
+        if (inputEl && inputEl.value) {
+            contentWidth = measureText(inputEl.value, inputEl) + 24;
+        }
+    }
+
+    // Caso 3: contenido genérico (texto, badges, tags, many2one, etc.)
+    if (!contentWidth) {
+        contentWidth = Math.ceil(cell.scrollWidth || 0);
+    }
+
+    return Math.ceil(contentWidth + padLeft + padRight);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Aplicar anchos por columna
 // ─────────────────────────────────────────────────────────────────────────────
 function syncColumnMinimumWidths(tableEl) {
@@ -217,7 +292,21 @@ function syncColumnMinimumWidths(tableEl) {
         headerCells.forEach((th, index) => {
             if (isSpecialColumn(th)) return;
 
-            const minWidth = Math.max(getHeaderRequiredWidth(th), 140);
+            const headerWidth = getHeaderRequiredWidth(th);
+
+            // Medir contenido de todas las celdas de esta columna y tomar el máximo
+            const bodyCells = tableEl.querySelectorAll(
+                `tbody tr > *:nth-child(${index + 1})`
+            );
+
+            let maxContentWidth = 0;
+            bodyCells.forEach((cell) => {
+                const w = getCellContentWidth(cell);
+                if (w > maxContentWidth) maxContentWidth = w;
+            });
+
+            // Ancho final = máximo entre header, contenido y piso de 140px
+            const minWidth = Math.max(headerWidth, maxContentWidth, 140);
             if (!minWidth || Number.isNaN(minWidth)) return;
 
             th.style.minWidth = `${minWidth}px`;
@@ -279,6 +368,7 @@ function scheduleApply(tableEl) {
     setTimeout(run, 60);
     setTimeout(run, 180);
     setTimeout(run, 320);
+    setTimeout(run, 600);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
