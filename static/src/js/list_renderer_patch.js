@@ -1,20 +1,23 @@
 /**
- * Modern List View Theme v3.4 - Stable column width enforcement
+ * Modern List View Theme v3.5 - Stable column width enforcement
  * Alphaqueb Consulting SAS
  *
+ * v3.5:
+ *  - Cuando hay un <select> en cualquier fila de una columna (aunque las otras
+ *    filas muestren un <span> readonly con el label), se calcula el ancho basado
+ *    en la opción más larga del select y se aplica como piso para TODA la columna.
+ *    Esto evita que la columna se achate al seleccionar opciones cortas como
+ *    "Precio Personalizado".
+ *  - Detección genérica de widgets con clase "*selector*" / "*__label" para
+ *    aplicar piso mínimo de 200px aunque no haya ningún <select> visible.
+ *
  * v3.4:
- *  - Se agrega medición del contenido real de cada celda (no solo del header)
- *    para que columnas con <select>, inputs o textos largos reciban el ancho
- *    adecuado. Útil para widgets tipo price_level_selector donde el texto
- *    de la opción seleccionada es mucho más largo que el título de la columna.
+ *  - Medición del contenido real de cada celda (no solo del header).
  *
  * v3.3:
- *  - Respetar SIEMPRE el ancho mínimo necesario para mostrar completo
- *    el nombre del encabezado de cada columna.
- *  - Aplicar tanto a listas principales como a listas embebidas.
- *  - Evitar que columnas técnicas (drag, favorito, selector, acciones, stone toggle)
- *    se expandan incorrectamente.
- *  - Recalcular automáticamente al abrir la vista, sin requerir refresh manual.
+ *  - Respetar ancho mínimo del encabezado.
+ *  - Evitar expansión de columnas técnicas.
+ *  - Recalcular automáticamente al abrir la vista.
  */
 
 import { patch } from "@web/core/utils/patch";
@@ -202,6 +205,33 @@ function measureText(text, styleSource) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Calcula el ancho necesario para un <select> basado en la opción más larga
+// ─────────────────────────────────────────────────────────────────────────────
+function getSelectRequiredWidth(selectEl) {
+    if (!selectEl) return 0;
+    let maxOptionWidth = 0;
+    for (let i = 0; i < selectEl.options.length; i++) {
+        const optText = selectEl.options[i].textContent || "";
+        const w = measureText(optText, selectEl);
+        if (w > maxOptionWidth) maxOptionWidth = w;
+    }
+    // +40 por el arrow del select y padding interno
+    return maxOptionWidth + 40;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Detecta si una celda contiene un widget tipo "selector" (por clases CSS)
+// ─────────────────────────────────────────────────────────────────────────────
+function cellHasSelectorWidget(cell) {
+    if (!cell) return false;
+    // Buscamos clases que sugieran que es un widget de selección/dropdown
+    // aunque en este momento se esté renderizando como span readonly.
+    return !!cell.querySelector(
+        "[class*='selector'], [class*='__label'], .o_field_selection, .o_field_radio"
+    );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Medir ancho real del contenido de una celda
 // ─────────────────────────────────────────────────────────────────────────────
 function getCellContentWidth(cell) {
@@ -213,19 +243,10 @@ function getCellContentWidth(cell) {
 
     let contentWidth = 0;
 
-    // Caso 1: <select> (widget price_level_selector, selection nativo, etc.)
+    // Caso 1: <select> directo
     const selectEl = cell.querySelector("select");
     if (selectEl) {
-        // Medir el texto más largo entre todas las opciones (no solo la seleccionada)
-        // para evitar que al cambiar de opción se vea cortado.
-        let maxOptionWidth = 0;
-        for (let i = 0; i < selectEl.options.length; i++) {
-            const optText = selectEl.options[i].textContent || "";
-            const w = measureText(optText, selectEl);
-            if (w > maxOptionWidth) maxOptionWidth = w;
-        }
-        // +40 por el arrow del select y padding interno
-        contentWidth = maxOptionWidth + 40;
+        contentWidth = getSelectRequiredWidth(selectEl);
     }
 
     // Caso 2: input de texto / número / textarea
@@ -236,12 +257,27 @@ function getCellContentWidth(cell) {
         }
     }
 
-    // Caso 3: contenido genérico (texto, badges, tags, many2one, etc.)
+    // Caso 3: contenido genérico (texto, badges, tags, etc.)
     if (!contentWidth) {
         contentWidth = Math.ceil(cell.scrollWidth || 0);
     }
 
     return Math.ceil(contentWidth + padLeft + padRight);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Busca un <select> en cualquier celda de una columna y devuelve su ancho
+// requerido. Esto estabiliza columnas cuyo contenido cambia entre <select>
+// (cuando se edita) y <span> corto (cuando se queda en modo "custom").
+// ─────────────────────────────────────────────────────────────────────────────
+function getColumnSelectWidth(tableEl, columnIndex) {
+    const selectEl = tableEl.querySelector(
+        `tbody tr > *:nth-child(${columnIndex + 1}) select`
+    );
+    if (selectEl) {
+        return getSelectRequiredWidth(selectEl);
+    }
+    return 0;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -294,19 +330,42 @@ function syncColumnMinimumWidths(tableEl) {
 
             const headerWidth = getHeaderRequiredWidth(th);
 
-            // Medir contenido de todas las celdas de esta columna y tomar el máximo
+            // Medir contenido de todas las celdas de la columna
             const bodyCells = tableEl.querySelectorAll(
                 `tbody tr > *:nth-child(${index + 1})`
             );
 
             let maxContentWidth = 0;
+            let hasSelectorWidget = false;
             bodyCells.forEach((cell) => {
                 const w = getCellContentWidth(cell);
                 if (w > maxContentWidth) maxContentWidth = w;
+                if (cellHasSelectorWidget(cell)) hasSelectorWidget = true;
             });
 
-            // Ancho final = máximo entre header, contenido y piso de 140px
-            const minWidth = Math.max(headerWidth, maxContentWidth, 140);
+            // Si hay un <select> en alguna fila de la columna, respetar su ancho
+            // como piso para TODA la columna (aunque otras filas muestren <span>).
+            const columnSelectWidth = getColumnSelectWidth(tableEl, index);
+
+            // Si detectamos un widget tipo selector por clase, forzar piso de 200px.
+            const selectorWidgetFloor = hasSelectorWidget ? 200 : 0;
+
+            // Persistir el ancho máximo histórico del <select> en dataset del TH
+            // para que al cambiar a "custom" no se achate la columna.
+            let historicalSelectWidth = parseInt(th.dataset.mlvSelectWidth || "0", 10) || 0;
+            if (columnSelectWidth > historicalSelectWidth) {
+                historicalSelectWidth = columnSelectWidth;
+                th.dataset.mlvSelectWidth = String(historicalSelectWidth);
+            }
+
+            const minWidth = Math.max(
+                headerWidth,
+                maxContentWidth,
+                columnSelectWidth,
+                historicalSelectWidth,
+                selectorWidgetFloor,
+                140
+            );
             if (!minWidth || Number.isNaN(minWidth)) return;
 
             th.style.minWidth = `${minWidth}px`;
