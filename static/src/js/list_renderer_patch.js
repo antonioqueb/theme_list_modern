@@ -1,15 +1,20 @@
 /**
- * Modern List View Theme v3.5 - Stable column width enforcement
+ * Modern List View Theme v3.6 - Stable column width enforcement
  * Alphaqueb Consulting SAS
  *
+ * v3.6:
+ *  - getSelectorWidgetFloor: ahora lee style="width:Xpx" del campo desde la
+ *    vista (en la celda, wrapper del widget o padre) y lo usa como piso real.
+ *    Fallback generoso de 280px para widgets selector sin width explícito.
+ *    Esto evita que la columna se achate al cambiar a opciones cortas como
+ *    "Precio Personalizado" (que renderiza solo un <span>).
+ *  - El piso del selector también se persiste en dataset.mlvSelectWidth,
+ *    así la columna recuerda su ancho aunque todas las filas estén en modo
+ *    sin <select>.
+ *
  * v3.5:
- *  - Cuando hay un <select> en cualquier fila de una columna (aunque las otras
- *    filas muestren un <span> readonly con el label), se calcula el ancho basado
- *    en la opción más larga del select y se aplica como piso para TODA la columna.
- *    Esto evita que la columna se achate al seleccionar opciones cortas como
- *    "Precio Personalizado".
- *  - Detección genérica de widgets con clase "*selector*" / "*__label" para
- *    aplicar piso mínimo de 200px aunque no haya ningún <select> visible.
+ *  - Detección de <select> en cualquier fila de la columna.
+ *  - Detección genérica de widgets con clase "*selector*" / "*__label".
  *
  * v3.4:
  *  - Medición del contenido real de cada celda (no solo del header).
@@ -221,14 +226,40 @@ function getSelectRequiredWidth(selectEl) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Detecta si una celda contiene un widget tipo "selector" (por clases CSS)
+// y devuelve el ancho mínimo sugerido:
+//   1. Si la vista definió style="width:Xpx" → lo respeta + 40px de padding.
+//   2. Si no hay style explícito → fallback de 280px.
+//   3. Si no hay widget selector → devuelve 0.
 // ─────────────────────────────────────────────────────────────────────────────
-function cellHasSelectorWidget(cell) {
-    if (!cell) return false;
-    // Buscamos clases que sugieran que es un widget de selección/dropdown
-    // aunque en este momento se esté renderizando como span readonly.
-    return !!cell.querySelector(
+function getSelectorWidgetFloor(cell) {
+    if (!cell) return 0;
+
+    const selectorEl = cell.querySelector(
         "[class*='selector'], [class*='__label'], .o_field_selection, .o_field_radio"
     );
+    if (!selectorEl) return 0;
+
+    // Buscar ancho explícito puesto por el dev en la vista XML (style="width: 240px")
+    // Puede estar en el mismo cell, en el wrapper del widget, o en el padre del campo.
+    const candidates = [
+        cell,
+        cell.querySelector("[style*='width']"),
+        cell.closest("[style*='width']"),
+    ].filter(Boolean);
+
+    for (const el of candidates) {
+        const style = el.getAttribute && el.getAttribute("style");
+        if (style) {
+            const match = style.match(/width\s*:\s*(\d+)\s*px/i);
+            if (match) {
+                // +40 para padding de celda y el arrow del select
+                return parseInt(match[1], 10) + 40;
+            }
+        }
+    }
+
+    // Fallback generoso para widgets selector sin width explícito
+    return 280;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -267,8 +298,8 @@ function getCellContentWidth(cell) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Busca un <select> en cualquier celda de una columna y devuelve su ancho
-// requerido. Esto estabiliza columnas cuyo contenido cambia entre <select>
-// (cuando se edita) y <span> corto (cuando se queda en modo "custom").
+// requerido. Estabiliza columnas cuyo contenido cambia entre <select>
+// (cuando se edita) y <span> corto (readonly / "custom").
 // ─────────────────────────────────────────────────────────────────────────────
 function getColumnSelectWidth(tableEl, columnIndex) {
     const selectEl = tableEl.querySelector(
@@ -336,25 +367,24 @@ function syncColumnMinimumWidths(tableEl) {
             );
 
             let maxContentWidth = 0;
-            let hasSelectorWidget = false;
+            let maxSelectorFloor = 0;
             bodyCells.forEach((cell) => {
                 const w = getCellContentWidth(cell);
                 if (w > maxContentWidth) maxContentWidth = w;
-                if (cellHasSelectorWidget(cell)) hasSelectorWidget = true;
+
+                const floor = getSelectorWidgetFloor(cell);
+                if (floor > maxSelectorFloor) maxSelectorFloor = floor;
             });
 
-            // Si hay un <select> en alguna fila de la columna, respetar su ancho
-            // como piso para TODA la columna (aunque otras filas muestren <span>).
+            // Ancho de <select> si existe en alguna fila
             const columnSelectWidth = getColumnSelectWidth(tableEl, index);
 
-            // Si detectamos un widget tipo selector por clase, forzar piso de 200px.
-            const selectorWidgetFloor = hasSelectorWidget ? 200 : 0;
-
-            // Persistir el ancho máximo histórico del <select> en dataset del TH
-            // para que al cambiar a "custom" no se achate la columna.
+            // Persistir el ancho máximo histórico (del select O del selector floor)
+            // para que al cambiar a "custom" / readonly la columna no se achate.
             let historicalSelectWidth = parseInt(th.dataset.mlvSelectWidth || "0", 10) || 0;
-            if (columnSelectWidth > historicalSelectWidth) {
-                historicalSelectWidth = columnSelectWidth;
+            const candidateHistorical = Math.max(columnSelectWidth, maxSelectorFloor);
+            if (candidateHistorical > historicalSelectWidth) {
+                historicalSelectWidth = candidateHistorical;
                 th.dataset.mlvSelectWidth = String(historicalSelectWidth);
             }
 
@@ -362,8 +392,8 @@ function syncColumnMinimumWidths(tableEl) {
                 headerWidth,
                 maxContentWidth,
                 columnSelectWidth,
+                maxSelectorFloor,
                 historicalSelectWidth,
-                selectorWidgetFloor,
                 140
             );
             if (!minWidth || Number.isNaN(minWidth)) return;
