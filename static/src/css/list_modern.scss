@@ -1,13 +1,22 @@
 /**
- * Modern List View Theme v3.8 - Odoo 19
+ * Modern List View Theme v4.0 - Odoo 19
  * Alphaqueb Consulting SAS
+ *
+ * v4.0 changes:
+ *  - Inputs de listas editables (principal y embebidas) ahora son 100% nativos:
+ *    sin fondo blanco custom, sin borde redondeado, sin sombra, sin gradiente.
+ *    Se eliminó el bloque CONTROLES MODERNOS y los overrides de inputs en
+ *    celdas monetary/integer/float. Los dropdowns/popovers conservan su estilo.
+ *
+ * v3.9 fixes:
+ *  - Wheel scroll vertical no se traba al pasar el cursor sobre la lista.
+ *    overflow-y: clip en .o_list_renderer (combinación válida con
+ *    overflow-x: auto que no crea scroll container vertical).
  *
  * v3.8 fixes:
  *  - Columnas de lista principal y embebida respetan ancho mínimo por header
  *  - Tablas usan width:max-content + min-width:100%
  *  - Columnas técnicas pequeñas y fijas (selector, handle, optional, acciones, stone toggle)
- *  - Exclude span.o_input from control styling (Odoo 19 monetary ghost overlay)
- *  - Force text color on :focus/:focus-visible to beat form_input_borders collision
  */
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -40,9 +49,7 @@
     --mlv-accent-soft:     rgba(37, 99, 235, 0.10);
 
     --mlv-shadow-table:    0 1px 2px rgba(16, 24, 40, .04), 0 12px 32px rgba(16, 24, 40, .06);
-    --mlv-shadow-control:  0 1px 2px rgba(16, 24, 40, .04);
 
-    --mlv-shadow-focus:    none;
     --mlv-transition:      160ms ease;
 
     --mlv-header-size:     0.79rem;
@@ -54,31 +61,13 @@
     --mlv-header-py:       13px;
     --mlv-row-height:      54px;
 
-    --mlv-control-height:          38px;
     --mlv-control-height-compact:  34px;
-    --mlv-control-radius:          12px;
-    --mlv-control-bg:              #ffffff;
-    --mlv-control-bg-hover:        #ffffff;
-    --mlv-control-border:          #d0d7e2;
-    --mlv-control-border-hover:    #b7c1d1;
-    --mlv-control-border-focus:    #d0d7e2;
-    --mlv-control-text:            #101828;
-    --mlv-control-placeholder:     #98a2b3;
 
     --mlv-check-border:        #98a2b3;
     --mlv-check-checked-bg:    #2563eb;
 
     --mlv-overlay-max-height:  min(70vh, 640px);
     --mlv-modal-max-height:    82vh;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Mixin: force text visible in all states
-// ─────────────────────────────────────────────────────────────────────────────
-@mixin mlv-text-always-visible {
-    color: var(--mlv-control-text) !important;
-    -webkit-text-fill-color: var(--mlv-control-text) !important;
-    caret-color: var(--mlv-control-text) !important;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -95,7 +84,7 @@
         border-radius: var(--mlv-border-radius);
         box-shadow: var(--mlv-shadow-table);
         overflow-x: auto !important;
-        overflow-y: visible;
+        overflow-y: clip !important;
 
         &::-webkit-scrollbar { height: 7px; width: 7px; }
         &::-webkit-scrollbar-track { background: transparent; }
@@ -112,6 +101,7 @@
 .o_list_renderer .table-responsive,
 .o_content .o_list_renderer {
     overflow-x: auto;
+    overflow-y: clip;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -459,243 +449,8 @@
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CONTROLES MODERNOS
+// Inputs editables: apariencia 100% nativa (sin overrides del tema)
 // ─────────────────────────────────────────────────────────────────────────────
-.o_list_view,
-.o_form_view .o_field_one2many,
-.o_form_view .o_field_many2many {
-
-    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
-    textarea,
-    select,
-    input.o_input {
-        appearance: none;
-        -webkit-appearance: none;
-        min-height: var(--mlv-control-height);
-        height: var(--mlv-control-height);
-        width: 100%;
-        border: 1.5px solid var(--mlv-control-border);
-        border-radius: var(--mlv-control-radius);
-        background: linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%);
-        @include mlv-text-always-visible;
-        font-family: var(--mlv-font-base);
-        font-size: 0.84rem;
-        font-weight: 500;
-        line-height: 1.2;
-        padding: 0 12px;
-        box-shadow: var(--mlv-shadow-control);
-        transition:
-            border-color var(--mlv-transition),
-            box-shadow var(--mlv-transition),
-            background var(--mlv-transition),
-            transform var(--mlv-transition);
-
-        &::placeholder {
-            color: var(--mlv-control-placeholder) !important;
-            -webkit-text-fill-color: var(--mlv-control-placeholder) !important;
-            opacity: 1;
-            font-weight: 400;
-        }
-
-        &:hover {
-            border-color: var(--mlv-control-border-hover);
-            background: var(--mlv-control-bg-hover);
-        }
-
-        &:focus,
-        &:focus-visible {
-            border-color: var(--mlv-control-border);
-            box-shadow: none;
-            outline: none;
-            background: #fff;
-            @include mlv-text-always-visible;
-        }
-
-        &:disabled,
-        &[disabled] {
-            background: #f8fafc;
-            color: #98a2b3 !important;
-            -webkit-text-fill-color: #98a2b3 !important;
-            border-color: #e4e7ec;
-            cursor: not-allowed;
-            box-shadow: none;
-        }
-    }
-
-    span.o_input {
-        border: none !important;
-        background: none !important;
-        background-image: none !important;
-        box-shadow: none !important;
-        min-height: unset !important;
-        height: auto !important;
-        padding: 0 !important;
-        border-radius: 0 !important;
-        appearance: unset !important;
-        -webkit-appearance: unset !important;
-    }
-
-    textarea,
-    textarea.o_input {
-        min-height: 92px; height: auto;
-        padding: 10px 12px; resize: vertical; text-align: left;
-    }
-
-    select,
-    .o_field_widget select {
-        padding-right: 36px;
-        background-image:
-            linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%),
-            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M5 7.5L10 12.5L15 7.5' stroke='%23667085' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-        background-repeat: no-repeat, no-repeat;
-        background-position: center center, right 12px center;
-        background-size: auto, 14px 14px;
-    }
-
-    .o_selected_row td,
-    td.o_data_cell,
-    .o_field_x2many_list_row {
-
-        input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
-        select,
-        input.o_input {
-            min-height: var(--mlv-control-height-compact);
-            height: var(--mlv-control-height-compact);
-            font-size: 0.82rem;
-            padding-left: 11px; padding-right: 11px;
-            border-radius: 10px;
-            line-height: calc(var(--mlv-control-height-compact) - 3px);
-            text-align: center !important;
-            @include mlv-text-always-visible;
-
-            &:focus,
-            &:focus-visible {
-                @include mlv-text-always-visible;
-            }
-        }
-
-        span.o_input {
-            border: none !important;
-            background: none !important;
-            background-image: none !important;
-            box-shadow: none !important;
-            min-height: unset !important;
-            height: auto !important;
-            padding: 0 !important;
-            border-radius: 0 !important;
-            appearance: unset !important;
-            -webkit-appearance: unset !important;
-        }
-
-        textarea,
-        textarea.o_input {
-            min-height: 76px; height: auto;
-            padding-top: 9px; padding-bottom: 9px;
-            line-height: 1.4; text-align: left !important;
-            @include mlv-text-always-visible;
-
-            &:focus,
-            &:focus-visible {
-                @include mlv-text-always-visible;
-            }
-        }
-    }
-
-    .o_field_widget.o_field_many2one,
-    .o_field_widget.o_field_char,
-    .o_field_widget.o_field_float,
-    .o_field_widget.o_field_integer,
-    .o_field_widget.o_field_monetary,
-    .o_field_widget.o_field_date,
-    .o_field_widget.o_field_datetime,
-    .o_field_widget.o_field_selection,
-    .o_field_widget.o_field_text,
-    .o_field_widget.o_field_many2manytags,
-    .o_field_widget .o-autocomplete,
-    .o_field_widget .o_input_dropdown,
-    .o_field_widget .o_select_menu,
-    .o_field_widget .o-select-menu,
-    .o_field_widget .o-dropdown {
-        font-family: var(--mlv-font-base);
-    }
-
-    .o-autocomplete,
-    .o_input_dropdown,
-    .o_select_menu,
-    .o-select-menu,
-    .o-dropdown {
-        border-radius: var(--mlv-control-radius);
-    }
-
-    .o-autocomplete--input,
-    .o-autocomplete input,
-    .o_input_dropdown input,
-    .o_select_menu input,
-    .o-select-menu input {
-        min-height: var(--mlv-control-height);
-        height: var(--mlv-control-height);
-        border: 1.5px solid var(--mlv-control-border);
-        border-radius: var(--mlv-control-radius);
-        background: linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%);
-        @include mlv-text-always-visible;
-        box-shadow: var(--mlv-shadow-control);
-        transition: border-color var(--mlv-transition), box-shadow var(--mlv-transition), background var(--mlv-transition);
-        text-align: center !important;
-
-        &:hover { border-color: var(--mlv-control-border-hover); }
-
-        &:focus,
-        &:focus-visible {
-            border-color: var(--mlv-control-border);
-            box-shadow: none; outline: none; background: #fff;
-            @include mlv-text-always-visible;
-        }
-    }
-
-    .o_field_many2manytags .badge,
-    .o_field_many2manytags .o_tag {
-        border-radius: 999px; font-weight: 700; padding: 4px 10px;
-        border: 1px solid #d6e4ff; background: #eef4ff; color: #1d4ed8;
-    }
-
-    .o_external_button,
-    .o_field_widget .o_input_dropdown .btn,
-    .o_field_widget .o-autocomplete .btn,
-    .o_field_widget .o-autocomplete button,
-    .o_field_widget .btn-link {
-        color: #667085 !important; border-radius: 10px;
-        transition: background var(--mlv-transition), color var(--mlv-transition), opacity var(--mlv-transition);
-        &:hover { color: #101828 !important; background: #f2f4f7; text-decoration: none; }
-    }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Inputs numéricos / monetarios centrados
-// ─────────────────────────────────────────────────────────────────────────────
-.o_list_view td.o_monetary_cell,
-.o_list_view td.o_integer_cell,
-.o_list_view td.o_float_cell,
-.o_form_view .o_field_one2many td.o_monetary_cell,
-.o_form_view .o_field_one2many td.o_integer_cell,
-.o_form_view .o_field_one2many td.o_float_cell {
-    input, input.o_input, select {
-        text-align: center !important;
-        font-variant-numeric: tabular-nums;
-        font-feature-settings: "tnum" 1;
-        font-family: var(--mlv-font-numeric);
-        font-weight: 700;
-        padding-left: 12px !important; padding-right: 12px !important;
-    }
-}
-
-.o_list_view td.o_monetary_cell .o_field_widget,
-.o_list_view td.o_float_cell .o_field_widget,
-.o_list_view td.o_integer_cell .o_field_widget,
-.o_form_view .o_field_one2many td.o_monetary_cell .o_field_widget,
-.o_form_view .o_field_one2many td.o_float_cell .o_field_widget,
-.o_form_view .o_field_one2many td.o_integer_cell .o_field_widget {
-    display: flex; align-items: center; justify-content: center; text-align: center;
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Many2many tags / impuestos
@@ -801,7 +556,7 @@
 .modal .o_list_renderer,
 .o_dialog_container .o_list_renderer,
 .o_overlay_container .o_list_renderer {
-    overflow-x: auto !important; overflow-y: visible !important;
+    overflow-x: auto !important; overflow-y: clip !important;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -829,7 +584,7 @@
 .o_form_view .o_field_many2many .o_list_renderer,
 .o_form_view .o_field_widget .o_list_renderer {
     overflow-x: auto !important;
-    overflow-y: visible !important;
+    overflow-y: clip !important;
     box-shadow: none;
     border: 1px solid var(--mlv-border-color);
     border-radius: var(--mlv-border-radius);
