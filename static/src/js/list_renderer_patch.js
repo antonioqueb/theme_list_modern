@@ -1,16 +1,16 @@
 /**
- * Modern List View Theme v3.6 - Stable column width enforcement
+ * Modern List View Theme v3.7 - Stable column width enforcement
  * Alphaqueb Consulting SAS
  *
+ * v3.7:
+ *  - Soporte para columnas con ancho FIJO forzado (FIXED_WIDTH_COLUMNS).
+ *    Estas columnas no entran al cálculo dinámico y respetan el valor
+ *    declarado en el diccionario. Pensado para widgets cuyo contenido
+ *    cambia mucho entre modos (ej: price_level_selector: select vs span).
+ *
  * v3.6:
- *  - getSelectorWidgetFloor: ahora lee style="width:Xpx" del campo desde la
- *    vista (en la celda, wrapper del widget o padre) y lo usa como piso real.
- *    Fallback generoso de 280px para widgets selector sin width explícito.
- *    Esto evita que la columna se achate al cambiar a opciones cortas como
- *    "Precio Personalizado" (que renderiza solo un <span>).
- *  - El piso del selector también se persiste en dataset.mlvSelectWidth,
- *    así la columna recuerda su ancho aunque todas las filas estén en modo
- *    sin <select>.
+ *  - getSelectorWidgetFloor lee style="width:Xpx" de la vista.
+ *  - Fallback generoso de 280px para widgets selector.
  *
  * v3.5:
  *  - Detección de <select> en cualquier fila de la columna.
@@ -28,6 +28,21 @@
 import { patch } from "@web/core/utils/patch";
 import { ListRenderer } from "@web/views/list/list_renderer";
 import { onMounted, onPatched } from "@odoo/owl";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Columnas con ancho FIJO forzado (NO entran al cálculo dinámico).
+// Agregar aquí cualquier campo cuyo ancho deba ser constante sin importar
+// el contenido que se renderice en cada fila.
+// ─────────────────────────────────────────────────────────────────────────────
+const FIXED_WIDTH_COLUMNS = {
+    "x_price_selector": 320,
+};
+
+function getFixedWidthForColumn(th) {
+    if (!th) return 0;
+    const dataName = th.getAttribute("data-name") || th.getAttribute("name") || "";
+    return FIXED_WIDTH_COLUMNS[dataName] || 0;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tablas que NO deben tocarse
@@ -136,6 +151,18 @@ function enforceTableExpansion(tableEl) {
     tableEl.style.minWidth = "100%";
 
     tableEl.querySelectorAll("thead th").forEach((th) => {
+        // Respetar columnas con ancho fijo declarado
+        const fixedW = getFixedWidthForColumn(th);
+        if (fixedW > 0) {
+            th.style.minWidth = `${fixedW}px`;
+            th.style.width = `${fixedW}px`;
+            th.style.maxWidth = `${fixedW}px`;
+            th.style.whiteSpace = "nowrap";
+            th.style.overflow = "hidden";
+            th.style.textOverflow = "clip";
+            return;
+        }
+
         if (isSpecialColumn(th)) {
             const fixedWidth = getSpecialColumnWidth(th);
             th.style.minWidth = `${fixedWidth}px`;
@@ -239,8 +266,6 @@ function getSelectorWidgetFloor(cell) {
     );
     if (!selectorEl) return 0;
 
-    // Buscar ancho explícito puesto por el dev en la vista XML (style="width: 240px")
-    // Puede estar en el mismo cell, en el wrapper del widget, o en el padre del campo.
     const candidates = [
         cell,
         cell.querySelector("[style*='width']"),
@@ -252,13 +277,11 @@ function getSelectorWidgetFloor(cell) {
         if (style) {
             const match = style.match(/width\s*:\s*(\d+)\s*px/i);
             if (match) {
-                // +40 para padding de celda y el arrow del select
                 return parseInt(match[1], 10) + 40;
             }
         }
     }
 
-    // Fallback generoso para widgets selector sin width explícito
     return 280;
 }
 
@@ -298,8 +321,7 @@ function getCellContentWidth(cell) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Busca un <select> en cualquier celda de una columna y devuelve su ancho
-// requerido. Estabiliza columnas cuyo contenido cambia entre <select>
-// (cuando se edita) y <span> corto (readonly / "custom").
+// requerido.
 // ─────────────────────────────────────────────────────────────────────────────
 function getColumnSelectWidth(tableEl, columnIndex) {
     const selectEl = tableEl.querySelector(
@@ -323,15 +345,15 @@ function syncColumnMinimumWidths(tableEl) {
     const headerCells = [...headerRow.children];
     if (!headerCells.length) return;
 
-    // Reset previo
+    // Reset previo + aplicación de anchos fijos y especiales
     headerCells.forEach((th, index) => {
         const columnCells = tableEl.querySelectorAll(
             `tbody tr > *:nth-child(${index + 1}), tfoot tr > *:nth-child(${index + 1})`
         );
 
-        if (isSpecialColumn(th)) {
-            const fixedWidth = getSpecialColumnWidth(th);
-
+        // ────── Columnas con ancho FIJO (prioridad máxima) ──────
+        const fixedWidth = getFixedWidthForColumn(th);
+        if (fixedWidth > 0) {
             th.style.minWidth = `${fixedWidth}px`;
             th.style.width = `${fixedWidth}px`;
             th.style.maxWidth = `${fixedWidth}px`;
@@ -344,6 +366,23 @@ function syncColumnMinimumWidths(tableEl) {
             return;
         }
 
+        // ────── Columnas técnicas (handle, selector de fila, etc) ──────
+        if (isSpecialColumn(th)) {
+            const specialWidth = getSpecialColumnWidth(th);
+
+            th.style.minWidth = `${specialWidth}px`;
+            th.style.width = `${specialWidth}px`;
+            th.style.maxWidth = `${specialWidth}px`;
+
+            columnCells.forEach((cell) => {
+                cell.style.minWidth = `${specialWidth}px`;
+                cell.style.width = `${specialWidth}px`;
+                cell.style.maxWidth = `${specialWidth}px`;
+            });
+            return;
+        }
+
+        // ────── Reset para cálculo dinámico ──────
         th.style.minWidth = "";
         th.style.width = "";
         th.style.maxWidth = "";
@@ -357,11 +396,13 @@ function syncColumnMinimumWidths(tableEl) {
 
     requestAnimationFrame(() => {
         headerCells.forEach((th, index) => {
+            // Saltar columnas con ancho fijo (ya aplicado arriba)
+            if (getFixedWidthForColumn(th) > 0) return;
+
             if (isSpecialColumn(th)) return;
 
             const headerWidth = getHeaderRequiredWidth(th);
 
-            // Medir contenido de todas las celdas de la columna
             const bodyCells = tableEl.querySelectorAll(
                 `tbody tr > *:nth-child(${index + 1})`
             );
@@ -376,11 +417,8 @@ function syncColumnMinimumWidths(tableEl) {
                 if (floor > maxSelectorFloor) maxSelectorFloor = floor;
             });
 
-            // Ancho de <select> si existe en alguna fila
             const columnSelectWidth = getColumnSelectWidth(tableEl, index);
 
-            // Persistir el ancho máximo histórico (del select O del selector floor)
-            // para que al cambiar a "custom" / readonly la columna no se achate.
             let historicalSelectWidth = parseInt(th.dataset.mlvSelectWidth || "0", 10) || 0;
             const candidateHistorical = Math.max(columnSelectWidth, maxSelectorFloor);
             if (candidateHistorical > historicalSelectWidth) {
