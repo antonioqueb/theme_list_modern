@@ -35,7 +35,7 @@ import { onMounted, onPatched } from "@odoo/owl";
 // el contenido que se renderice en cada fila.
 // ─────────────────────────────────────────────────────────────────────────────
 const FIXED_WIDTH_COLUMNS = {
-    "x_price_selector": 320,
+    "x_price_selector": 190,
 };
 
 function getFixedWidthForColumn(th) {
