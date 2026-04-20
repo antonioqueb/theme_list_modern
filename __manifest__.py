@@ -1,6 +1,6 @@
 {
     'name': 'Modern List View Theme',
-    'version': '19.0.7.0.0',
+    'version': '19.0.8.0.0',
     'summary': 'Tema moderno global para todas las vistas de lista en Odoo 19',
     'category': 'Technical',
     'author': 'Alphaqueb Consulting SAS',
