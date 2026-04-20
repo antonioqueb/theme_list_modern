@@ -32,6 +32,7 @@ import { onMounted, onPatched } from "@odoo/owl";
 // ─────────────────────────────────────────────────────────────────────────────
 const FIXED_WIDTH_COLUMNS = {
     "x_price_selector": 220,
+     "x_project_id": 250,
 };
 
 function getFixedWidthForColumn(th) {

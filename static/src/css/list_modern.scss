@@ -642,4 +642,12 @@
         min-width: 220px !important;
         max-width: 220px !important;
     }
+
+    th[data-name="x_project_id"],
+    td[name="x_project_id"],
+    td.o_data_cell[data-name="x_project_id"] {
+        width: 250px !important;
+        min-width: 250px !important;
+        max-width: 250px !important;
+    }
 }
