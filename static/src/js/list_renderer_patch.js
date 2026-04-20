@@ -1,26 +1,16 @@
 /**
- * Modern List View Theme v3.8 - UX optimizado sin flicker
+ * Custom List Column Width - Odoo 19
  * Alphaqueb Consulting SAS
  *
- * v3.8:
- *  - Eliminadas las múltiples reaplicaciones en cascada (6 setTimeout).
- *  - Tabla oculta (visibility:hidden) hasta que termina el primer cálculo,
- *    evita el "flash" de columnas enormes en la primera apertura.
- *  - Reset + medición + aplicación en un solo pase sincrónico (sin rAF
- *    intermedio que causaba dos repintados visibles).
- *  - MutationObserver con debounce (16ms): no dispara cascadas.
- *  - En re-renders posteriores no se oculta la tabla; sólo la primera vez.
+ * Único propósito: calcular y aplicar anchos de columnas en vistas de lista.
  *
- * v3.7:
- *  - Soporte para columnas con ancho FIJO forzado (FIXED_WIDTH_COLUMNS).
+ *   - FIXED_WIDTH_COLUMNS: columnas con ancho fijo forzado por nombre de campo.
+ *   - Columnas técnicas (selector, optional, handle): 30px.
+ *   - Columnas dinámicas: ancho basado en header + contenido de celdas
+ *     (incluye <select>, inputs, widgets selector).
  *
- * v3.6:
- *  - getSelectorWidgetFloor lee style="width:Xpx" de la vista.
- *  - Fallback generoso de 280px para widgets selector.
- *
- * v3.5 - v3.3:
- *  - Detección de <select>, medición de contenido, anchos por header,
- *    evitar expansión de columnas técnicas.
+ * No toca: colores, fuentes, badges, modales, dropdowns, hover, etc.
+ * Todo eso queda con el comportamiento nativo de Odoo 19.
  */
 
 import { patch } from "@web/core/utils/patch";
@@ -28,11 +18,11 @@ import { ListRenderer } from "@web/views/list/list_renderer";
 import { onMounted, onPatched } from "@odoo/owl";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Columnas con ancho FIJO forzado (NO entran al cálculo dinámico).
+// Columnas con ancho FIJO forzado (sincronizado con SCSS)
 // ─────────────────────────────────────────────────────────────────────────────
 const FIXED_WIDTH_COLUMNS = {
     "x_price_selector": 220,
-     "x_project_id": 250,
+    "x_project_id": 250,
 };
 
 function getFixedWidthForColumn(th) {
@@ -42,7 +32,7 @@ function getFixedWidthForColumn(th) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Tablas que NO deben tocarse
+// Excluir tablas de reportes contables
 // ─────────────────────────────────────────────────────────────────────────────
 function shouldSkipTable(tableEl) {
     return !!tableEl.closest(
@@ -57,7 +47,7 @@ function shouldSkipTable(tableEl) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Columnas técnicas
+// Identificar columnas técnicas
 // ─────────────────────────────────────────────────────────────────────────────
 function isSpecialColumn(th) {
     if (!th) return true;
@@ -99,18 +89,17 @@ function getSpecialColumnWidth() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Tabla expandible real (estilos base del tableEl)
+// Expansión real de la tabla
 // ─────────────────────────────────────────────────────────────────────────────
 function enforceTableExpansion(tableEl) {
     if (!tableEl || shouldSkipTable(tableEl)) return;
-
     tableEl.style.tableLayout = "auto";
     tableEl.style.width = "max-content";
     tableEl.style.minWidth = "100%";
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Medir ancho real del header
+// Medir headers
 // ─────────────────────────────────────────────────────────────────────────────
 function getHeaderRequiredWidth(th) {
     const titleEl =
@@ -134,7 +123,7 @@ function getHeaderRequiredWidth(th) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Medir texto arbitrario
+// Medir texto / selects / inputs
 // ─────────────────────────────────────────────────────────────────────────────
 function measureText(text, styleSource) {
     if (!text) return 0;
@@ -236,7 +225,7 @@ function getColumnSelectWidth(tableEl, columnIndex) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Aplicar un ancho a columna (TH + todas las celdas)
+// Aplicar / resetear ancho de columna
 // ─────────────────────────────────────────────────────────────────────────────
 function applyColumnWidth(th, columnCells, width, hard) {
     th.style.minWidth = `${width}px`;
@@ -262,7 +251,7 @@ function resetColumnWidth(th, columnCells) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Calcular y aplicar anchos (un solo pase sincrónico, sin rAF intermedio).
+// Calcular y aplicar anchos en un solo pase sincrónico
 // ─────────────────────────────────────────────────────────────────────────────
 function syncColumnMinimumWidths(tableEl) {
     if (!tableEl || shouldSkipTable(tableEl)) return;
@@ -273,8 +262,7 @@ function syncColumnMinimumWidths(tableEl) {
     const headerCells = [...headerRow.children];
     if (!headerCells.length) return;
 
-    // Paso 1: Aplicar anchos fijos/especiales + resetear el resto.
-    // Guardamos referencias a las columnas dinámicas para medir después.
+    // Paso 1: anchos fijos / especiales + reset dinámicas
     const dynamicColumns = [];
 
     headerCells.forEach((th, index) => {
@@ -297,8 +285,7 @@ function syncColumnMinimumWidths(tableEl) {
         dynamicColumns.push({ th, index, columnCells });
     });
 
-    // Paso 2: Medir todas las dinámicas (la lectura de scrollWidth fuerza
-    // el reflow, así que las mediciones reflejan el reset anterior).
+    // Paso 2: medir dinámicas (fuerza reflow)
     const measurements = dynamicColumns.map(({ th, index, columnCells }) => {
         const headerWidth = getHeaderRequiredWidth(th);
 
@@ -337,7 +324,7 @@ function syncColumnMinimumWidths(tableEl) {
         return { th, index, columnCells, minWidth };
     });
 
-    // Paso 3: Aplicar todas las mediciones en batch (un solo paint).
+    // Paso 3: aplicar en batch
     measurements.forEach(({ th, index, minWidth }) => {
         if (!minWidth || Number.isNaN(minWidth)) return;
 
@@ -356,20 +343,14 @@ function syncColumnMinimumWidths(tableEl) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Ajustes sobre celdas (whitespace, tooltips)
+// Whitespace mínimo para que el medir de anchos funcione
+// (única alteración de celdas: forzar nowrap para que scrollWidth sea real)
 // ─────────────────────────────────────────────────────────────────────────────
 function applyCellStyles(tableEl) {
     if (!tableEl || shouldSkipTable(tableEl)) return;
 
     tableEl.querySelectorAll("thead th").forEach((th) => {
         th.style.whiteSpace = "nowrap";
-        if (isSpecialColumn(th) || getFixedWidthForColumn(th) > 0) {
-            th.style.overflow = "hidden";
-            th.style.textOverflow = "clip";
-        } else {
-            th.style.overflow = "visible";
-            th.style.textOverflow = "clip";
-        }
     });
 
     tableEl.querySelectorAll("tbody td:not(.o_list_record_selector)").forEach((td) => {
@@ -377,28 +358,10 @@ function applyCellStyles(tableEl) {
     });
 }
 
-function addCellTooltips(tableEl) {
-    if (!tableEl || shouldSkipTable(tableEl)) return;
-
-    tableEl.querySelectorAll("tbody td:not(.o_list_record_selector)").forEach((td) => {
-        if (td._mlvTip) return;
-        td._mlvTip = true;
-
-        td.addEventListener("mouseenter", () => {
-            if (td.scrollWidth > td.clientWidth + 2) {
-                td.setAttribute("title", td.textContent.trim());
-            } else {
-                td.removeAttribute("title");
-            }
-        });
-    });
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
-// Aplicación completa. Oculta la tabla en la PRIMERA aplicación para evitar
-// el flash de columnas enormes. En aplicaciones posteriores no oculta nada.
+// Aplicación completa. Oculta la tabla en el PRIMER render para evitar flash.
 // ─────────────────────────────────────────────────────────────────────────────
-function applyModernListSizing(tableEl) {
+function applyColumnSizing(tableEl) {
     if (!tableEl || shouldSkipTable(tableEl)) return;
 
     const isFirstTime = tableEl.dataset.mlvReady !== "1";
@@ -411,7 +374,6 @@ function applyModernListSizing(tableEl) {
         enforceTableExpansion(tableEl);
         applyCellStyles(tableEl);
         syncColumnMinimumWidths(tableEl);
-        addCellTooltips(tableEl);
     } finally {
         tableEl.dataset.mlvReady = "1";
         if (isFirstTime) {
@@ -421,18 +383,16 @@ function applyModernListSizing(tableEl) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Schedule: un solo requestAnimationFrame
+// Schedule
 // ─────────────────────────────────────────────────────────────────────────────
 function scheduleApply(tableEl) {
     if (!tableEl || shouldSkipTable(tableEl)) return;
 
-    // Ocultar inmediatamente si es primera vez (antes incluso del rAF),
-    // para que el usuario nunca vea la tabla en estado "crudo".
     if (tableEl.dataset.mlvReady !== "1") {
         tableEl.style.visibility = "hidden";
     }
 
-    requestAnimationFrame(() => applyModernListSizing(tableEl));
+    requestAnimationFrame(() => applyColumnSizing(tableEl));
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -455,8 +415,7 @@ patch(ListRenderer.prototype, {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Observer global con DEBOUNCE (16ms): agrupa mutations en cascada
-// en una sola aplicación por tabla.
+// Observer global debounced
 // ─────────────────────────────────────────────────────────────────────────────
 let _observerTimeout = null;
 const _pendingTables = new Set();
@@ -495,7 +454,6 @@ function _onResize() {
     if (_resizeTimeout) clearTimeout(_resizeTimeout);
     _resizeTimeout = setTimeout(() => {
         document.querySelectorAll("table.o_list_table").forEach((tableEl) => {
-            // En resize NO queremos ocultar. Solo recalcular anchos.
             if (tableEl.dataset.mlvReady === "1" && !shouldSkipTable(tableEl)) {
                 requestAnimationFrame(() => {
                     enforceTableExpansion(tableEl);
