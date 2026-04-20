@@ -31,7 +31,7 @@ import { onMounted, onPatched } from "@odoo/owl";
 // Columnas con ancho FIJO forzado (NO entran al cálculo dinámico).
 // ─────────────────────────────────────────────────────────────────────────────
 const FIXED_WIDTH_COLUMNS = {
-    "x_price_selector": 320,
+    "x_price_selector": 220,
 };
 
 function getFixedWidthForColumn(th) {

@@ -626,3 +626,20 @@
         justify-content: center !important;
     }
 }
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Columnas con ancho FIJO forzado (sincronizado con FIXED_WIDTH_COLUMNS
+// del JS patch). Los !important aseguran que el ancho se respete aun cuando
+// Odoo re-renderiza las celdas al editar una fila.
+// ─────────────────────────────────────────────────────────────────────────────
+.o_list_view table.o_list_table,
+.o_list_renderer table.o_list_table {
+    th[data-name="x_price_selector"],
+    td[name="x_price_selector"],
+    td.o_data_cell[data-name="x_price_selector"] {
+        width: 220px !important;
+        min-width: 220px !important;
+        max-width: 220px !important;
+    }
+}
