@@ -1,7 +1,7 @@
 {
     'name': 'Custom List Column Width',
-    'version': '19.0.9.0.0',
-    'summary': 'Control personalizado del ancho de columnas en vistas de lista',
+    'version': '19.0.10.0.0',
+    'summary': 'Ajuste mínimo y persistente de anchos de columnas en vistas de lista',
     'category': 'Technical',
     'author': 'Alphaqueb Consulting SAS',
     'depends': ['web'],

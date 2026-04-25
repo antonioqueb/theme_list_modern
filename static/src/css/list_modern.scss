@@ -2,127 +2,130 @@
  * Custom List Column Width - Odoo 19
  * Alphaqueb Consulting SAS
  *
- * Único propósito: controlar el ancho de las columnas en vistas de lista.
- * Todo lo demás queda con el look & feel NATIVO de Odoo.
+ * Versión simplificada y segura.
  *
- * Este archivo NO define:
- *   - colores, fuentes, sombras, bordes decorativos
- *   - estilos para badges, tags, status, checkboxes, dropdowns, modales
- *   - hover / filas alternas / header styling
- *
- * Sí define (y sólo eso):
- *   - table-layout auto + width max-content (para que los anchos del JS se respeten)
- *   - overflow-x auto en el contenedor (scroll horizontal cuando la tabla es ancha)
- *   - ancho fijo para columnas técnicas (selector, optional, handle)
- *   - ancho fijo forzado para columnas específicas (sync con FIXED_WIDTH_COLUMNS del JS)
- *   - neutralización del comportamiento sobre reportes contables
+ * Objetivo:
+ *   - Evitar columnas excesivamente aplastadas.
+ *   - Permitir scroll horizontal cuando la tabla no quepa.
+ *   - Respetar el comportamiento nativo de Odoo.
+ *   - No calcular anchos automáticamente.
+ *   - No forzar estilos visuales de tema.
  */
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Contenedor: scroll horizontal cuando la tabla excede el viewport
-// ─────────────────────────────────────────────────────────────────────────────
+/* ─────────────────────────────────────────────────────────────────────────────
+   Contenedor de listas
+   ───────────────────────────────────────────────────────────────────────────── */
+
 .o_list_view .o_list_renderer,
-.o_list_view > .o_list_renderer {
-    overflow-x: auto;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Tabla: permitir expansión real basada en anchos calculados
-// ─────────────────────────────────────────────────────────────────────────────
-.o_list_view table.o_list_table,
-.o_list_renderer table.o_list_table {
-    table-layout: auto !important;
-    width: max-content !important;
-    min-width: 100% !important;
-
-    // ─── Columnas técnicas: 30px fijo ────────────────────────────────────
-    th.o_list_record_selector,
-    td.o_list_record_selector,
-    th.o_list_selection_box,
-    td.o_list_selection_box,
-    th.o_list_optional_columns_dropdown,
-    td.o_list_optional_columns_dropdown,
-    th.o_handle_cell,
-    td.o_handle_cell,
-    th.o_row_handle,
-    td.o_row_handle,
-    th[class*="handle"],
-    td[class*="handle"] {
-        width: 30px !important;
-        min-width: 30px !important;
-        max-width: 30px !important;
-        padding-left: 4px !important;
-        padding-right: 4px !important;
-        text-align: center !important;
-    }
-
-    // ─── Stone toggle column (caso específico Recubrimientos) ────────────
-    th[data-name="is_stone_expanded"],
-    td[name="is_stone_expanded"],
-    td.o_data_cell[data-name="is_stone_expanded"],
-    .o_stone_toggle_column {
-        width: 30px !important;
-        min-width: 30px !important;
-        max-width: 30px !important;
-        padding-left: 4px !important;
-        padding-right: 4px !important;
-        text-align: center !important;
-    }
-
-    // ─── Columnas con ancho FIJO forzado ─────────────────────────────────
-    // (sincronizado con FIXED_WIDTH_COLUMNS en list_renderer_patch.js)
-    th[data-name="x_price_selector"],
-    td[name="x_price_selector"],
-    td.o_data_cell[data-name="x_price_selector"] {
-        width: 220px !important;
-        min-width: 220px !important;
-        max-width: 220px !important;
-    }
-
-    th[data-name="x_project_id"],
-    td[name="x_project_id"],
-    td.o_data_cell[data-name="x_project_id"] {
-        width: 250px !important;
-        min-width: 250px !important;
-        max-width: 250px !important;
-    }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Listas embebidas en formularios (one2many / many2many)
-// ─────────────────────────────────────────────────────────────────────────────
 .o_form_view .o_field_one2many .o_list_renderer,
 .o_form_view .o_field_many2many .o_list_renderer,
 .o_form_view .o_field_widget .o_list_renderer {
     overflow-x: auto;
+    max-width: 100%;
 }
 
-.o_form_view .o_field_one2many .o_list_renderer table.o_list_table,
-.o_form_view .o_field_many2many .o_list_renderer table.o_list_table,
-.o_form_view .o_field_widget .o_list_renderer table.o_list_table {
-    table-layout: auto !important;
-    width: max-content !important;
-    min-width: 100% !important;
+/* ─────────────────────────────────────────────────────────────────────────────
+   Tabla
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.o_list_renderer table.o_list_table {
+    table-layout: auto;
+    width: max-content;
+    min-width: 100%;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Excluir reportes contables: usan layout propio, no tocar
-// ─────────────────────────────────────────────────────────────────────────────
-.o_account_report_scroll_container,
-.o_account_reports_page,
-.o_account_report,
-.o_account_financial_report {
+/* ─────────────────────────────────────────────────────────────────────────────
+   Encabezados
+   ───────────────────────────────────────────────────────────────────────────── */
 
-    table,
-    table.o_list_table,
-    .o_list_renderer table.o_list_table {
-        width: auto !important;
-        min-width: unset !important;
-        max-width: 100% !important;
-        table-layout: auto !important;
-    }
+.o_list_renderer table.o_list_table thead th {
+    white-space: nowrap;
+}
 
-    .o_list_renderer {
-        overflow-x: hidden !important;
-    }
+/* ─────────────────────────────────────────────────────────────────────────────
+   Columnas de datos
+   No usamos width fijo. Solo un mínimo razonable.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.o_list_renderer table.o_list_table thead th[data-name],
+.o_list_renderer table.o_list_table tbody td.o_data_cell {
+    min-width: 110px;
+}
+
+/* Inputs/selects dentro de listas: evitar que queden demasiado comprimidos */
+
+.o_list_renderer table.o_list_table tbody td.o_data_cell input,
+.o_list_renderer table.o_list_table tbody td.o_data_cell select,
+.o_list_renderer table.o_list_table tbody td.o_data_cell textarea,
+.o_list_renderer table.o_list_table tbody td.o_data_cell .o_input {
+    min-width: 90px;
+}
+
+/* Campos largos: permitir que respiren sin destruir toda la tabla */
+
+.o_list_renderer table.o_list_table tbody td.o_data_cell textarea,
+.o_list_renderer table.o_list_table tbody td.o_data_cell .o_field_text,
+.o_list_renderer table.o_list_table tbody td.o_data_cell .o_field_html {
+    min-width: 220px;
+    max-width: 560px;
+    white-space: normal;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Columnas técnicas
+   Selector, checkbox, handle, optional columns, acciones.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.o_list_renderer table.o_list_table th.o_list_record_selector,
+.o_list_renderer table.o_list_table td.o_list_record_selector,
+.o_list_renderer table.o_list_table th.o_list_selection_box,
+.o_list_renderer table.o_list_table td.o_list_selection_box,
+.o_list_renderer table.o_list_table th.o_list_optional_columns_dropdown,
+.o_list_renderer table.o_list_table td.o_list_optional_columns_dropdown,
+.o_list_renderer table.o_list_table th.o_handle_cell,
+.o_list_renderer table.o_list_table td.o_handle_cell,
+.o_list_renderer table.o_list_table th.o_row_handle,
+.o_list_renderer table.o_list_table td.o_row_handle,
+.o_list_renderer table.o_list_table th.o_list_button,
+.o_list_renderer table.o_list_table td.o_list_button,
+.o_list_renderer table.o_list_table th.o_list_action,
+.o_list_renderer table.o_list_table td.o_list_action,
+.o_list_renderer table.o_list_table th.o_list_record_remove,
+.o_list_renderer table.o_list_table td.o_list_record_remove,
+.o_list_renderer table.o_list_table th[data-name="is_stone_expanded"],
+.o_list_renderer table.o_list_table td[name="is_stone_expanded"],
+.o_list_renderer table.o_list_table td.o_data_cell[data-name="is_stone_expanded"],
+.o_list_renderer table.o_list_table .o_stone_toggle_column {
+    width: 32px;
+    min-width: 32px;
+    max-width: 44px;
+    padding-left: 4px;
+    padding-right: 4px;
+    text-align: center;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   No tocar reportes contables ni ajustes
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.o_account_report_scroll_container .o_list_renderer,
+.o_account_reports_page .o_list_renderer,
+.o_account_report .o_list_renderer,
+.o_account_financial_report .o_list_renderer,
+.o_settings_container .o_list_renderer,
+.o_setting_container .o_list_renderer,
+.app_settings_block .o_list_renderer {
+    overflow-x: visible;
+}
+
+.o_account_report_scroll_container table.o_list_table,
+.o_account_reports_page table.o_list_table,
+.o_account_report table.o_list_table,
+.o_account_financial_report table.o_list_table,
+.o_settings_container table.o_list_table,
+.o_setting_container table.o_list_table,
+.app_settings_block table.o_list_table {
+    width: 100%;
+    min-width: 100%;
+    table-layout: auto;
 }
