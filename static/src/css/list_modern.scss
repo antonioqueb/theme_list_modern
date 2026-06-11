@@ -2,13 +2,12 @@
  * Custom List Column Width - Odoo 19
  * Alphaqueb Consulting SAS
  *
- * Versión simplificada y segura.
- *
  * Objetivo:
  *   - Evitar columnas excesivamente aplastadas.
  *   - Permitir scroll horizontal cuando la tabla no quepa.
  *   - Respetar el comportamiento nativo de Odoo.
- *   - No calcular anchos automáticamente.
+ *   - Dejar que el JS asigne anchos inteligentes por tipo de campo;
+ *     aquí solo se definen mínimos bajos y reglas de soporte.
  *   - No forzar estilos visuales de tema.
  */
 
@@ -44,12 +43,28 @@
 
 /* ─────────────────────────────────────────────────────────────────────────────
    Columnas de datos
-   No usamos width fijo. Solo un mínimo razonable.
+   Mínimo bajo: el ancho real lo asigna el auto-ajuste JS según el tipo de
+   campo y el contenido. Un mínimo alto aquí inflaría columnas pequeñas
+   (booleanos, unidades, cantidades).
    ───────────────────────────────────────────────────────────────────────────── */
 
 .o_list_renderer table.o_list_table thead th[data-name],
 .o_list_renderer table.o_list_table tbody td.o_data_cell {
-    min-width: 110px;
+    min-width: 48px;
+}
+
+/* Encabezado con título más ancho que su contenido: se permite envolver en
+   dos líneas en vez de inflar la columna (clase aplicada por JS). */
+
+.o_list_renderer table.o_list_table thead th.aq_th_wrap {
+    white-space: normal;
+    line-height: 1.15;
+    vertical-align: middle;
+}
+
+.o_list_renderer table.o_list_table thead th.aq_th_wrap .text-truncate {
+    white-space: normal !important;
+    text-overflow: clip;
 }
 
 /* Inputs/selects dentro de listas: evitar que queden demasiado comprimidos */
