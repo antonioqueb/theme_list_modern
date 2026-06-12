@@ -189,8 +189,8 @@ function isNearRightEdge(ev, th) {
 // Límites por tipo de campo. `extra` es el padding/iconos que se suma al
 // texto medido.
 const TYPE_BOUNDS = {
-    boolean: { min: 54, max: 90, extra: 12 },
-    toggle: { min: 44, max: 84, extra: 8 },
+    boolean: { min: 38, max: 70, extra: 10 },
+    toggle: { min: 36, max: 64, extra: 8 },
     integer: { min: 70, max: 130, extra: 26 },
     float: { min: 85, max: 155, extra: 26 },
     monetary: { min: 100, max: 180, extra: 30 },
@@ -233,6 +233,10 @@ const GROW_TYPES = new Set(["char", "text", "html", "many2one"]);
 const MAX_MEASURED_ROWS = 60;
 const HEADER_SORT_ICON_SPACE = 38;
 const HEADER_WORD_PADDING = 26;
+// Booleanos/toggles: encabezado compacto (menos padding lateral, ver CSS
+// .aq_th_compact), por eso reservan menos espacio extra para la palabra.
+const COMPACT_WORD_PADDING = 14;
+const COMPACT_TYPES = new Set(["boolean", "toggle"]);
 
 let measureCtx = null;
 
@@ -399,6 +403,8 @@ function fitColumns(tableEl, renderer, storedWidths) {
         }
         contentWidth += bounds.extra;
 
+        const compact = COMPACT_TYPES.has(type);
+
         // Ancho del encabezado: completo en una línea y su palabra más larga.
         const headerText = (th.textContent || "").trim();
         const headerFullWidth =
@@ -407,7 +413,8 @@ function fitColumns(tableEl, renderer, storedWidths) {
             .split(/\s+/)
             .reduce((a, b) => (b.length > a.length ? b : a), "");
         const headerWordWidth =
-            textWidth(longestWord, headerFont) + HEADER_WORD_PADDING;
+            textWidth(longestWord, headerFont) +
+            (compact ? COMPACT_WORD_PADDING : HEADER_WORD_PADDING);
 
         let ideal;
         if (headerFullWidth <= Math.max(contentWidth, bounds.min)) {
@@ -417,7 +424,9 @@ function fitColumns(tableEl, renderer, storedWidths) {
             // dejar que el título se envuelva en dos líneas.
             ideal = Math.max(contentWidth, headerWordWidth, bounds.min);
         }
-        ideal = Math.min(ideal, bounds.max);
+        // En booleanos/toggles el título completo manda: la palabra más
+        // larga puede superar el máximo del tipo, pero nunca se corta.
+        ideal = Math.min(ideal, Math.max(bounds.max, compact ? headerWordWidth : 0));
 
         // Un ancho guardado por el usuario reemplaza al ideal calculado,
         // pero sigue sujeto al ajuste global de "todo cabe en pantalla".
@@ -426,13 +435,22 @@ function fitColumns(tableEl, renderer, storedWidths) {
             ideal = stored;
         }
 
+        // Mínimo inquebrantable: en booleanos/toggles ninguna fase de
+        // encogimiento puede bajar del ancho de la palabra más larga del
+        // título, para que "Mandar Pedir" / "Por Asignar" se lean completos.
+        const titleFloor = compact ? Math.min(ideal, headerWordWidth) : 0;
+
         dataCols.push({
             index,
             th,
             name,
             type,
             width: ideal,
-            min: Math.min(ideal, Math.max(bounds.min, HARD_MIN_WIDTH)),
+            min: Math.min(
+                ideal,
+                Math.max(bounds.min, HARD_MIN_WIDTH, titleFloor)
+            ),
+            titleFloor,
             flexible: FLEX_TYPES.has(type),
             stored: !!stored,
             headerFullWidth,
@@ -452,10 +470,11 @@ function fitColumns(tableEl, renderer, storedWidths) {
             overflow
         );
 
-        // ...y si aún no cabe, encoger todas hasta el mínimo duro.
+        // ...y si aún no cabe, encoger todas hasta el mínimo duro,
+        // sin romper el piso del título en booleanos/toggles.
         if (overflow > 0) {
             dataCols.forEach((c) => {
-                c.min = Math.min(c.width, HARD_MIN_WIDTH);
+                c.min = Math.min(c.width, Math.max(HARD_MIN_WIDTH, c.titleFloor));
             });
             shrinkColumns(dataCols, overflow);
         }
@@ -487,6 +506,7 @@ function fitColumns(tableEl, renderer, storedWidths) {
         const width = Math.floor(c.width);
         setColumnWidth(tableEl, c.index, width);
         c.th.classList.toggle("aq_th_wrap", width + 6 < c.headerFullWidth);
+        c.th.classList.toggle("aq_th_compact", COMPACT_TYPES.has(c.type));
     });
 
     // table-layout fixed: el navegador respeta los anchos exactos y el

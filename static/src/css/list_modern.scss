@@ -70,6 +70,16 @@
     text-overflow: clip;
 }
 
+/* Encabezados de columnas booleanas/toggles (clase aplicada por JS):
+   menos padding lateral para que la columna sea angosta sin cortar el
+   título, que se centra y envuelve en dos líneas si hace falta. */
+
+.o_list_renderer table.o_list_table thead th.aq_th_compact {
+    padding-left: 4px;
+    padding-right: 4px;
+    text-align: center;
+}
+
 /* Inputs/selects dentro de listas: ocupar la celda, nunca desbordarla */
 
 .o_list_renderer table.o_list_table tbody td.o_data_cell input:not([type="checkbox"]):not([type="radio"]),
@@ -117,9 +127,11 @@
    ───────────────────────────────────────────────────────────────────────────── */
 
 .o_list_renderer table.o_list_table tbody td.o_data_cell:has(.o_boolean_toggle),
-.o_list_renderer table.o_list_table tbody td.o_data_cell:has(.o_field_boolean_toggle) {
+.o_list_renderer table.o_list_table tbody td.o_data_cell:has(.o_field_boolean_toggle),
+.o_list_renderer table.o_list_table tbody td.o_data_cell:has(> .o_field_boolean) {
     padding-left: 4px;
     padding-right: 4px;
+    text-align: center;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
