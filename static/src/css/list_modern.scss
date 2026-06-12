@@ -190,11 +190,3 @@
     padding: 4px 10px;
     white-space: nowrap;
 }
-
-/* Toggles angostos (Mandar a pedir / Por Asignar): encabezado compacto */
-.o_list_renderer th[data-name="auto_transit_assign"],
-.o_list_renderer th[data-name="por_asignar"] {
-    font-size: 0.72rem;
-    white-space: normal;
-    line-height: 1.1;
-}
