@@ -214,32 +214,71 @@
 
 
 /* ── Orden de venta: controles de la lista de líneas como botones ──
-   "Agregar un producto / sección / nota" y "Catálogo" dejan de ser
-   enlaces de texto y se ven como botones con un + al inicio. */
+   "Agregar un producto / sección / nota" y "Catálogo" como botones
+   rellenos en verde dólar, con + al inicio y hover llamativo
+   (elevación, brillo y barrido de luz). */
 .o_sale_order .o_field_x2many_list_row_add {
-    padding-top: 6px;
-    padding-bottom: 6px;
+    padding-top: 8px;
+    padding-bottom: 8px;
 
     a,
     button.btn-link {
+        position: relative;
+        overflow: hidden;
         display: inline-block;
-        padding: 3px 12px;
+        padding: 4px 14px;
         margin-right: 8px;
-        border: 1px solid currentColor;
+        border: none;
         border-radius: 6px;
-        font-weight: 500;
+        background: linear-gradient(160deg, #1fa055 0%, #118c4f 100%);
+        color: #fff !important;
+        font-weight: 600;
         text-decoration: none;
-        transition: background-color 0.12s ease, color 0.12s ease;
+        box-shadow: 0 2px 5px rgba(17, 140, 79, 0.35);
+        transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
 
         &::before {
             content: "+ ";
-            font-weight: 700;
+            font-weight: 800;
+        }
+
+        /* Barrido de luz */
+        &::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -75%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(
+                100deg,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.45) 50%,
+                rgba(255, 255, 255, 0) 100%
+            );
+            transform: skewX(-20deg);
         }
 
         &:hover {
-            background-color: var(--primary, #714b67);
-            border-color: var(--primary, #714b67);
-            color: #fff;
+            transform: translateY(-2px) scale(1.04);
+            filter: brightness(1.08);
+            box-shadow: 0 6px 16px rgba(17, 140, 79, 0.55);
+            color: #fff !important;
+
+            &::after {
+                animation: o_sale_btn_shine 0.65s ease forwards;
+            }
         }
+
+        &:active {
+            transform: translateY(0) scale(0.97);
+            box-shadow: 0 2px 5px rgba(17, 140, 79, 0.35);
+        }
+    }
+}
+
+@keyframes o_sale_btn_shine {
+    to {
+        left: 125%;
     }
 }
