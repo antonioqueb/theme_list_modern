@@ -192,21 +192,21 @@ const TYPE_BOUNDS = {
     boolean: { min: 54, max: 90, extra: 12 },
     toggle: { min: 44, max: 84, extra: 8 },
     integer: { min: 70, max: 130, extra: 26 },
-    float: { min: 80, max: 150, extra: 26 },
-    monetary: { min: 90, max: 170, extra: 30 },
+    float: { min: 85, max: 155, extra: 26 },
+    monetary: { min: 100, max: 180, extra: 30 },
     date: { min: 92, max: 130, extra: 26 },
     datetime: { min: 125, max: 175, extra: 26 },
     selection: { min: 85, max: 220, extra: 38 },
     char: { min: 95, max: 340, extra: 30 },
     many2one: { min: 105, max: 340, extra: 30 },
-    many2many: { min: 96, max: 360, extra: 34 },
+    many2many: { min: 96, max: 280, extra: 34 },
     one2many: { min: 105, max: 360, extra: 44 },
     text: { min: 160, max: 560, extra: 30 },
     html: { min: 160, max: 560, extra: 30 },
     default: { min: 90, max: 300, extra: 30 },
 };
 
-// Tipos que pueden ceder/absorber espacio antes que el resto.
+// Tipos que ceden espacio primero cuando la tabla no cabe.
 const FLEX_TYPES = new Set([
     "char",
     "text",
@@ -217,6 +217,10 @@ const FLEX_TYPES = new Set([
     "reference",
     "default",
 ]);
+
+// Tipos que absorben el espacio sobrante. Solo texto real: los tags
+// (many2many) y los widgets desconocidos no deben estirarse.
+const GROW_TYPES = new Set(["char", "text", "html", "many2one"]);
 
 const MAX_MEASURED_ROWS = 60;
 const HEADER_SORT_ICON_SPACE = 38;
@@ -448,11 +452,11 @@ function fitColumns(tableEl, renderer, storedWidths) {
         }
     } else if (total < available) {
         // Sobra espacio: repartirlo entre columnas de texto reales que el
-        // usuario no haya dimensionado a mano. Los widgets desconocidos
-        // (tipo "default", como selectores personalizados) no se inflan
-        // mientras exista una columna de texto que pueda absorber.
+        // usuario no haya dimensionado a mano. Los tags (many2many), los
+        // widgets desconocidos y los campos compactos no se inflan mientras
+        // exista una columna de texto que pueda absorber.
         let growers = dataCols.filter(
-            (c) => c.flexible && !c.stored && c.type !== "default"
+            (c) => GROW_TYPES.has(c.type) && !c.stored
         );
         if (!growers.length) {
             growers = dataCols.filter((c) => c.flexible && !c.stored);

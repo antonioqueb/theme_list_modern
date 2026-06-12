@@ -72,7 +72,7 @@
 
 /* Inputs/selects dentro de listas: ocupar la celda, nunca desbordarla */
 
-.o_list_renderer table.o_list_table tbody td.o_data_cell input,
+.o_list_renderer table.o_list_table tbody td.o_data_cell input:not([type="checkbox"]):not([type="radio"]),
 .o_list_renderer table.o_list_table tbody td.o_data_cell select,
 .o_list_renderer table.o_list_table tbody td.o_data_cell textarea,
 .o_list_renderer table.o_list_table tbody td.o_data_cell .o_input {
@@ -120,14 +120,6 @@
 .o_list_renderer table.o_list_table tbody td.o_data_cell:has(.o_field_boolean_toggle) {
     padding-left: 4px;
     padding-right: 4px;
-    text-align: center;
-}
-
-.o_list_renderer table.o_list_table tbody td.o_data_cell .o_field_boolean_toggle {
-    display: inline-flex;
-    justify-content: center;
-    min-width: 0;
-    margin: 0 auto;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
