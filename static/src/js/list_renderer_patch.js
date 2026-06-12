@@ -218,8 +218,16 @@ const FLEX_TYPES = new Set([
     "default",
 ]);
 
-// Tipos que absorben el espacio sobrante. Solo texto real: los tags
-// (many2many) y los widgets desconocidos no deben estirarse.
+// El espacio sobrante lo absorbe UNA sola columna: la principal (producto /
+// nombre). Se busca por nombre de campo en este orden; si la vista no tiene
+// ninguno, se usa la columna de texto más ancha como respaldo.
+const MAIN_GROW_FIELDS = [
+    "product_template_id",
+    "product_id",
+    "name",
+    "display_name",
+];
+
 const GROW_TYPES = new Set(["char", "text", "html", "many2one"]);
 
 const MAX_MEASURED_ROWS = 60;
@@ -421,6 +429,7 @@ function fitColumns(tableEl, renderer, storedWidths) {
         dataCols.push({
             index,
             th,
+            name,
             type,
             width: ideal,
             min: Math.min(ideal, Math.max(bounds.min, HARD_MIN_WIDTH)),
@@ -451,26 +460,26 @@ function fitColumns(tableEl, renderer, storedWidths) {
             shrinkColumns(dataCols, overflow);
         }
     } else if (total < available) {
-        // Sobra espacio: repartirlo entre columnas de texto reales que el
-        // usuario no haya dimensionado a mano. Los tags (many2many), los
-        // widgets desconocidos y los campos compactos no se inflan mientras
-        // exista una columna de texto que pueda absorber.
-        let growers = dataCols.filter(
-            (c) => GROW_TYPES.has(c.type) && !c.stored
-        );
-        if (!growers.length) {
-            growers = dataCols.filter((c) => c.flexible && !c.stored);
-        }
-        if (!growers.length) {
-            growers = dataCols.filter((c) => !c.stored);
+        // Sobra espacio: lo absorbe ÚNICAMENTE la columna principal
+        // (producto / nombre). El resto conserva su ancho justo.
+        const candidates = dataCols.filter((c) => !c.stored);
+        let grower = null;
+
+        for (const fieldName of MAIN_GROW_FIELDS) {
+            grower = candidates.find((c) => c.name === fieldName) || null;
+            if (grower) break;
         }
 
-        if (growers.length) {
-            const extra = available - total;
-            const growTotal = growers.reduce((sum, c) => sum + c.width, 0);
-            growers.forEach((c) => {
-                c.width += (extra * c.width) / growTotal;
-            });
+        if (!grower) {
+            // Respaldo: la columna de texto más ancha de la vista.
+            grower =
+                candidates
+                    .filter((c) => GROW_TYPES.has(c.type))
+                    .sort((a, b) => b.width - a.width)[0] || null;
+        }
+
+        if (grower) {
+            grower.width += available - total;
         }
     }
 
