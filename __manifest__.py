@@ -1,7 +1,7 @@
 {
     'name': 'Custom List Column Width',
-    'version': '19.0.11.0.0',
-    'summary': 'Ajuste inteligente y persistente de anchos de columnas en vistas de lista',
+    'version': '19.0.13.0.0',
+    'summary': 'Anchos inteligentes de columnas: todo cabe siempre en el ancho de la pantalla',
     'category': 'Technical',
     'author': 'Alphaqueb Consulting SAS',
     'depends': ['web'],

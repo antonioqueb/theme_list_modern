@@ -2,26 +2,36 @@
  * Custom List Column Width - Odoo 19
  * Alphaqueb Consulting SAS
  *
- * Objetivos JS:
- *   - Auto-ajuste inteligente: columnas compactas (boolean, números, fechas,
- *     selección) reciben solo el ancho que su contenido necesita; las columnas
- *     de texto siguen siendo flexibles y absorben el espacio sobrante.
- *   - Si el título del encabezado es más ancho que el contenido de la columna,
- *     el título se envuelve en dos líneas en vez de inflar la columna.
- *   - La medición usa canvas (sin reflow), se ejecuta una sola vez por carga
- *     de datos y se aplica antes del paint: no hay parpadeo.
- *   - Detectar cuando el usuario redimensiona una columna, guardar ese ancho
- *     en localStorage y restaurarlo al volver a cargar la vista. Los anchos
- *     manuales siempre tienen prioridad sobre el auto-ajuste.
+ * Regla principal:
+ *   TODAS las columnas deben caber siempre en el ancho visible de la pantalla.
+ *   No hay scroll horizontal: si la suma de anchos ideales excede el contenedor,
+ *   las columnas se encogen (primero las flexibles, luego todas) hasta caber.
+ *
+ * Cómo funciona:
+ *   1. Se calcula un ancho ideal por columna según el tipo de campo y el
+ *      contenido real de las celdas (medición con canvas, sin reflow).
+ *   2. Se ajusta el total al ancho del contenedor: el espacio sobrante se
+ *      reparte solo entre columnas de texto; el faltante se recorta primero
+ *      de las flexibles y después de todas proporcionalmente.
+ *   3. Se aplica con table-layout: fixed para que el navegador respete los
+ *      anchos exactos y el contenido largo se trunque en vez de desbordar.
+ *   4. Si el título del encabezado no cabe, se envuelve en dos líneas en vez
+ *      de inflar la columna.
+ *
+ * Los anchos redimensionados manualmente por el usuario se guardan en
+ * localStorage y se usan como ancho ideal de esa columna, pero también
+ * participan del ajuste: la regla de "todo cabe en pantalla" manda.
  */
 
 import { patch } from "@web/core/utils/patch";
 import { ListRenderer } from "@web/views/list/list_renderer";
 import { onMounted, onPatched, onWillUnmount } from "@odoo/owl";
 
-const STORAGE_PREFIX = "alphaqueb:list_column_widths:v2";
+const STORAGE_BASE_PREFIX = "alphaqueb:list_column_widths";
+const STORAGE_PREFIX = `${STORAGE_BASE_PREFIX}:v3`;
 const MIN_WIDTH = 48;
 const MAX_WIDTH = 1400;
+const HARD_MIN_WIDTH = 40;
 const RESIZE_EDGE_TOLERANCE = 12;
 
 function shouldSkipTable(tableEl) {
@@ -153,42 +163,6 @@ function collectCurrentWidths(tableEl) {
     return widths;
 }
 
-function applyWidthToHeader(tableEl, columnIndex, width) {
-    const safeWidth = normalizeWidth(width);
-    if (!safeWidth) return;
-
-    const th = getHeaderCells(tableEl)[columnIndex];
-    if (!th || isTechnicalColumn(th)) return;
-
-    th.style.width = `${safeWidth}px`;
-    th.style.minWidth = `${safeWidth}px`;
-    th.style.maxWidth = "none";
-
-    const col = tableEl.querySelector(`colgroup col:nth-child(${columnIndex + 1})`);
-    if (col) {
-        col.style.width = `${safeWidth}px`;
-        col.style.minWidth = `${safeWidth}px`;
-        col.style.maxWidth = "none";
-    }
-}
-
-function applyStoredWidths(tableEl, key) {
-    if (!tableEl || shouldSkipTable(tableEl)) return;
-
-    const widths = loadWidths(key);
-    if (!widths || !Object.keys(widths).length) return;
-
-    getHeaderCells(tableEl).forEach((th, index) => {
-        const name = getColumnName(th);
-        if (!name || isTechnicalColumn(th)) return;
-
-        const width = widths[name];
-        if (width) {
-            applyWidthToHeader(tableEl, index, width);
-        }
-    });
-}
-
 function persistCurrentWidths(tableEl, key) {
     if (!tableEl || shouldSkipTable(tableEl)) return;
 
@@ -209,14 +183,14 @@ function isNearRightEdge(ev, th) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   Auto-ajuste inteligente de anchos
+   Ajuste inteligente de anchos con regla "todo cabe en pantalla"
    ───────────────────────────────────────────────────────────────────────────── */
 
-// Límites por tipo de campo. `extra` es el padding/iconos que se suma al texto
-// medido. Los tipos compactos además quedan con max-width fijo para que el
-// espacio sobrante de la tabla se vaya a las columnas flexibles.
+// Límites por tipo de campo. `extra` es el padding/iconos que se suma al
+// texto medido.
 const TYPE_BOUNDS = {
-    boolean: { min: 60, max: 96, extra: 16 },
+    boolean: { min: 54, max: 90, extra: 12 },
+    toggle: { min: 44, max: 84, extra: 8 },
     integer: { min: 70, max: 130, extra: 26 },
     float: { min: 80, max: 150, extra: 26 },
     monetary: { min: 90, max: 170, extra: 30 },
@@ -225,14 +199,14 @@ const TYPE_BOUNDS = {
     selection: { min: 85, max: 220, extra: 38 },
     char: { min: 95, max: 340, extra: 30 },
     many2one: { min: 105, max: 340, extra: 30 },
-    many2many: { min: 105, max: 360, extra: 44 },
+    many2many: { min: 96, max: 360, extra: 34 },
     one2many: { min: 105, max: 360, extra: 44 },
     text: { min: 160, max: 560, extra: 30 },
     html: { min: 160, max: 560, extra: 30 },
     default: { min: 90, max: 300, extra: 30 },
 };
 
-// Tipos cuyo ancho NO se congela: pueden crecer para absorber espacio sobrante.
+// Tipos que pueden ceder/absorber espacio antes que el resto.
 const FLEX_TYPES = new Set([
     "char",
     "text",
@@ -287,7 +261,7 @@ function getColumnTypes(renderer) {
         // Algunos widgets cambian la naturaleza visual del campo.
         if (col.widget === "badge") type = "selection";
         if (col.widget === "boolean_toggle" || col.widget === "boolean_favorite") {
-            type = "boolean";
+            type = "toggle";
         }
         if (col.widget === "monetary") type = "monetary";
 
@@ -301,6 +275,9 @@ function getColumnTypes(renderer) {
 function inferTypeFromCells(cells) {
     for (const td of cells) {
         if (!td) continue;
+        if (td.querySelector(".o_boolean_toggle, .form-switch")) {
+            return "toggle";
+        }
         if (td.querySelector("input[type='checkbox'], .o-checkbox")) {
             return "boolean";
         }
@@ -311,27 +288,64 @@ function inferTypeFromCells(cells) {
     return "default";
 }
 
-function applyAutoWidth(tableEl, columnIndex, width, freeze) {
+function getContainerWidth(tableEl) {
+    const container =
+        tableEl.closest(".o_list_renderer") || tableEl.parentElement;
+    return container ? container.clientWidth : 0;
+}
+
+// Recorta `amount` px de las columnas, proporcional al margen que cada una
+// tiene sobre su mínimo. Devuelve lo que no se pudo recortar.
+function shrinkColumns(cols, amount) {
+    if (amount <= 0 || !cols.length) return Math.max(0, amount);
+
+    const slackTotal = cols.reduce(
+        (sum, c) => sum + Math.max(0, c.width - c.min),
+        0
+    );
+    if (slackTotal <= 0) return amount;
+
+    const ratio = Math.min(1, amount / slackTotal);
+    let removed = 0;
+
+    cols.forEach((c) => {
+        const slack = Math.max(0, c.width - c.min);
+        const cut = slack * ratio;
+        c.width -= cut;
+        removed += cut;
+    });
+
+    return Math.max(0, amount - removed);
+}
+
+function setColumnWidth(tableEl, columnIndex, width) {
+    const px = `${Math.round(width)}px`;
+
     const th = getHeaderCells(tableEl)[columnIndex];
-    if (!th || isTechnicalColumn(th)) return;
+    if (th) {
+        th.style.width = px;
+        th.style.minWidth = "";
+        th.style.maxWidth = "";
+    }
 
-    th.style.width = `${width}px`;
-    th.style.minWidth = `${width}px`;
-    th.style.maxWidth = freeze ? `${width}px` : "none";
-
-    const col = tableEl.querySelector(`colgroup col:nth-child(${columnIndex + 1})`);
+    const col = tableEl.querySelector(
+        `colgroup col:nth-child(${columnIndex + 1})`
+    );
     if (col) {
-        col.style.width = `${width}px`;
-        col.style.minWidth = `${width}px`;
-        col.style.maxWidth = freeze ? `${width}px` : "none";
+        col.style.width = px;
+        col.style.minWidth = "";
+        col.style.maxWidth = "";
     }
 }
 
-function autoFitColumns(tableEl, renderer, storedWidths) {
+function fitColumns(tableEl, renderer, storedWidths) {
     if (!tableEl || shouldSkipTable(tableEl)) return;
 
     const headerCells = getHeaderCells(tableEl);
     if (!headerCells.length) return;
+
+    const containerWidth = getContainerWidth(tableEl);
+    if (containerWidth < 120) return; // Contenedor oculto o sin layout aún.
 
     const bodyRows = [...tableEl.querySelectorAll("tbody tr.o_data_row")].slice(
         0,
@@ -345,15 +359,19 @@ function autoFitColumns(tableEl, renderer, storedWidths) {
     const sampleTh = headerCells.find((th) => !isTechnicalColumn(th));
     const headerFont = sampleTh ? cssFont(sampleTh) : cellFont;
 
+    const dataCols = [];
+    let technicalTotal = 0;
+
     headerCells.forEach((th, index) => {
-        if (isTechnicalColumn(th)) return;
+        if (isTechnicalColumn(th)) {
+            let width = Math.round(th.getBoundingClientRect().width) || 32;
+            width = Math.min(Math.max(width, 24), 80);
+            technicalTotal += width;
+            setColumnWidth(tableEl, index, width);
+            return;
+        }
 
         const name = getColumnName(th);
-        if (!name) return;
-
-        // Un ancho redimensionado por el usuario manda sobre el auto-ajuste.
-        if (storedWidths && storedWidths[name]) return;
-
         const cells = bodyRows.map((row) => row.children[index]);
         const type = columnTypes[name] || inferTypeFromCells(cells);
         const bounds = TYPE_BOUNDS[type] || TYPE_BOUNDS.default;
@@ -379,35 +397,100 @@ function autoFitColumns(tableEl, renderer, storedWidths) {
         const headerWordWidth =
             textWidth(longestWord, headerFont) + HEADER_WORD_PADDING;
 
-        let width;
-        let wrapHeader = false;
-
+        let ideal;
         if (headerFullWidth <= Math.max(contentWidth, bounds.min)) {
-            // El título cabe en el ancho que pide el contenido.
-            width = Math.max(contentWidth, bounds.min);
+            ideal = Math.max(contentWidth, bounds.min);
         } else {
             // Título más ancho que el contenido: ajustar al contenido y
-            // permitir que el título se envuelva en dos líneas.
-            width = Math.max(contentWidth, headerWordWidth, bounds.min);
-            wrapHeader = width < headerFullWidth;
+            // dejar que el título se envuelva en dos líneas.
+            ideal = Math.max(contentWidth, headerWordWidth, bounds.min);
+        }
+        ideal = Math.min(ideal, bounds.max);
+
+        // Un ancho guardado por el usuario reemplaza al ideal calculado,
+        // pero sigue sujeto al ajuste global de "todo cabe en pantalla".
+        const stored = normalizeWidth(storedWidths?.[name]);
+        if (stored) {
+            ideal = stored;
         }
 
-        width = Math.round(Math.min(width, bounds.max));
-        wrapHeader = wrapHeader && width < headerFullWidth;
-
-        th.classList.toggle("aq_th_wrap", wrapHeader);
-
-        applyAutoWidth(tableEl, index, width, !FLEX_TYPES.has(type));
+        dataCols.push({
+            index,
+            th,
+            type,
+            width: ideal,
+            min: Math.min(ideal, Math.max(bounds.min, HARD_MIN_WIDTH)),
+            flexible: FLEX_TYPES.has(type),
+            stored: !!stored,
+            headerFullWidth,
+        });
     });
+
+    if (!dataCols.length) return;
+
+    const available = containerWidth - technicalTotal - 4;
+    const total = dataCols.reduce((sum, c) => sum + c.width, 0);
+
+    if (total > available) {
+        // No cabe: encoger primero las flexibles hasta su mínimo de tipo...
+        let overflow = total - available;
+        overflow = shrinkColumns(
+            dataCols.filter((c) => c.flexible),
+            overflow
+        );
+
+        // ...y si aún no cabe, encoger todas hasta el mínimo duro.
+        if (overflow > 0) {
+            dataCols.forEach((c) => {
+                c.min = Math.min(c.width, HARD_MIN_WIDTH);
+            });
+            shrinkColumns(dataCols, overflow);
+        }
+    } else if (total < available) {
+        // Sobra espacio: repartirlo entre columnas de texto reales que el
+        // usuario no haya dimensionado a mano. Los widgets desconocidos
+        // (tipo "default", como selectores personalizados) no se inflan
+        // mientras exista una columna de texto que pueda absorber.
+        let growers = dataCols.filter(
+            (c) => c.flexible && !c.stored && c.type !== "default"
+        );
+        if (!growers.length) {
+            growers = dataCols.filter((c) => c.flexible && !c.stored);
+        }
+        if (!growers.length) {
+            growers = dataCols.filter((c) => !c.stored);
+        }
+
+        if (growers.length) {
+            const extra = available - total;
+            const growTotal = growers.reduce((sum, c) => sum + c.width, 0);
+            growers.forEach((c) => {
+                c.width += (extra * c.width) / growTotal;
+            });
+        }
+    }
+
+    dataCols.forEach((c) => {
+        const width = Math.floor(c.width);
+        setColumnWidth(tableEl, c.index, width);
+        c.th.classList.toggle("aq_th_wrap", width + 6 < c.headerFullWidth);
+    });
+
+    // table-layout fixed: el navegador respeta los anchos exactos y el
+    // contenido largo se trunca en vez de desbordar la pantalla.
+    tableEl.style.tableLayout = "fixed";
+    tableEl.style.width = "100%";
+    tableEl.style.maxWidth = "100%";
 }
 
-function getAutoFitSignature(tableEl) {
+function getFitSignature(tableEl) {
     const names = getHeaderCells(tableEl)
         .map((th) => getColumnName(th))
         .filter(Boolean)
         .join("|");
     const hasRows = tableEl.querySelector("tbody tr.o_data_row") ? "1" : "0";
-    return `${names}::${hasRows}`;
+    const containerWidth = getContainerWidth(tableEl);
+    return `${names}::${hasRows}::${containerWidth}`;
 }
 
 patch(ListRenderer.prototype, {
@@ -420,7 +503,18 @@ patch(ListRenderer.prototype, {
         let storageKey = null;
         let pointerState = null;
         let persistTimer = null;
-        let lastAutoFitSignature = null;
+        let resizeTimer = null;
+        let lastFitSignature = null;
+
+        const runFit = () => {
+            if (!tableEl || !storageKey) return;
+
+            const signature = getFitSignature(tableEl);
+            if (signature === lastFitSignature) return;
+            lastFitSignature = signature;
+
+            fitColumns(tableEl, renderer, loadWidths(storageKey));
+        };
 
         const schedulePersist = () => {
             if (persistTimer) {
@@ -432,6 +526,16 @@ patch(ListRenderer.prototype, {
                     persistCurrentWidths(tableEl, storageKey);
                 }
             }, 180);
+        };
+
+        const onWindowResize = () => {
+            if (resizeTimer) {
+                clearTimeout(resizeTimer);
+            }
+
+            resizeTimer = setTimeout(() => {
+                runFit();
+            }, 150);
         };
 
         const onPointerDown = (ev) => {
@@ -478,29 +582,20 @@ patch(ListRenderer.prototype, {
 
                 tableEl = nextTable;
                 storageKey = getStorageKey(renderer);
-                lastAutoFitSignature = null;
+                lastFitSignature = null;
 
                 tableEl.addEventListener("pointerdown", onPointerDown, true);
             }
 
             requestAnimationFrame(() => {
-                if (!tableEl || !storageKey) return;
-
-                // Auto-ajuste: solo cuando cambian las columnas o llegan datos,
-                // para no recalcular (ni mover nada) en cada render.
-                const signature = getAutoFitSignature(tableEl);
-                if (signature !== lastAutoFitSignature) {
-                    lastAutoFitSignature = signature;
-                    autoFitColumns(tableEl, renderer, loadWidths(storageKey));
-                }
-
-                applyStoredWidths(tableEl, storageKey);
+                runFit();
             });
         };
 
         onMounted(() => {
             bindTable();
             window.addEventListener("pointerup", onPointerUp, true);
+            window.addEventListener("resize", onWindowResize);
         });
 
         onPatched(() => {
@@ -512,11 +607,16 @@ patch(ListRenderer.prototype, {
                 clearTimeout(persistTimer);
             }
 
+            if (resizeTimer) {
+                clearTimeout(resizeTimer);
+            }
+
             if (tableEl) {
                 tableEl.removeEventListener("pointerdown", onPointerDown, true);
             }
 
             window.removeEventListener("pointerup", onPointerUp, true);
+            window.removeEventListener("resize", onWindowResize);
         });
     },
 });
@@ -526,14 +626,14 @@ patch(ListRenderer.prototype, {
  *
  *     alphaquebClearListColumnWidths()
  *
- * Sirve para limpiar anchos guardados si una vista queda con una configuración vieja.
+ * Limpia todos los anchos guardados (incluye versiones anteriores del módulo).
  */
 globalThis.alphaquebClearListColumnWidths = function alphaquebClearListColumnWidths() {
     const keys = [];
 
     for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && key.startsWith(STORAGE_PREFIX)) {
+        if (key && key.startsWith(STORAGE_BASE_PREFIX)) {
             keys.push(key);
         }
     }
