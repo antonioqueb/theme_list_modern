@@ -80,6 +80,15 @@
     text-align: center;
 }
 
+/* Encabezados de columnas numéricas compactas (Stock / Solicitado /
+   Asignado, clase aplicada por JS): menos padding lateral, conservando la
+   alineación a la derecha de las columnas numéricas. */
+
+.o_list_renderer table.o_list_table thead th.aq_th_num_compact {
+    padding-left: 4px;
+    padding-right: 6px;
+}
+
 /* Inputs/selects dentro de listas: ocupar la celda, nunca desbordarla */
 
 .o_list_renderer table.o_list_table tbody td.o_data_cell input:not([type="checkbox"]):not([type="radio"]),

@@ -238,6 +238,13 @@ const HEADER_WORD_PADDING = 26;
 const COMPACT_WORD_PADDING = 14;
 const COMPACT_TYPES = new Set(["boolean", "toggle"]);
 
+// Columnas numéricas que deben verse compactas (líneas de la orden de venta:
+// Stock, Solicitado, Asignado). Se identifican por el texto del encabezado
+// para no depender del nombre técnico del campo calculado.
+const COMPACT_NUMERIC_HEADERS = new Set(["stock", "solicitado", "asignado"]);
+const COMPACT_NUMERIC_BOUNDS = { min: 46, max: 92, extra: 14 };
+const NUMERIC_TYPES = new Set(["integer", "float", "monetary"]);
+
 let measureCtx = null;
 
 function getMeasureContext() {
@@ -390,7 +397,15 @@ function fitColumns(tableEl, renderer, storedWidths) {
         const name = getColumnName(th);
         const cells = bodyRows.map((row) => row.children[index]);
         const type = columnTypes[name] || inferTypeFromCells(cells);
-        const bounds = TYPE_BOUNDS[type] || TYPE_BOUNDS.default;
+
+        const headerText = (th.textContent || "").trim();
+        const compactNumeric =
+            NUMERIC_TYPES.has(type) &&
+            COMPACT_NUMERIC_HEADERS.has(headerText.toLowerCase());
+
+        const bounds = compactNumeric
+            ? COMPACT_NUMERIC_BOUNDS
+            : TYPE_BOUNDS[type] || TYPE_BOUNDS.default;
 
         // Ancho real del contenido (texto más largo de la columna).
         let contentWidth = 0;
@@ -403,10 +418,9 @@ function fitColumns(tableEl, renderer, storedWidths) {
         }
         contentWidth += bounds.extra;
 
-        const compact = COMPACT_TYPES.has(type);
+        const compact = COMPACT_TYPES.has(type) || compactNumeric;
 
         // Ancho del encabezado: completo en una línea y su palabra más larga.
-        const headerText = (th.textContent || "").trim();
         const headerFullWidth =
             textWidth(headerText, headerFont) + HEADER_SORT_ICON_SPACE;
         const longestWord = headerText
@@ -424,8 +438,9 @@ function fitColumns(tableEl, renderer, storedWidths) {
             // dejar que el título se envuelva en dos líneas.
             ideal = Math.max(contentWidth, headerWordWidth, bounds.min);
         }
-        // En booleanos/toggles el título completo manda: la palabra más
-        // larga puede superar el máximo del tipo, pero nunca se corta.
+        // En columnas compactas (booleanos, toggles, numéricas compactas)
+        // el título completo manda: la palabra más larga puede superar el
+        // máximo del tipo, pero nunca se corta.
         ideal = Math.min(ideal, Math.max(bounds.max, compact ? headerWordWidth : 0));
 
         // Un ancho guardado por el usuario reemplaza al ideal calculado,
@@ -437,7 +452,7 @@ function fitColumns(tableEl, renderer, storedWidths) {
 
         // Mínimo inquebrantable: en booleanos/toggles ninguna fase de
         // encogimiento puede bajar del ancho de la palabra más larga del
-        // título, para que "Mandar Pedir" / "Por Asignar" se lean completos.
+        // título, para que "Pedir" / "Asignar" se lean completos.
         const titleFloor = compact ? Math.min(ideal, headerWordWidth) : 0;
 
         dataCols.push({
@@ -451,6 +466,7 @@ function fitColumns(tableEl, renderer, storedWidths) {
                 Math.max(bounds.min, HARD_MIN_WIDTH, titleFloor)
             ),
             titleFloor,
+            compactNumeric,
             flexible: FLEX_TYPES.has(type),
             stored: !!stored,
             headerFullWidth,
@@ -507,6 +523,7 @@ function fitColumns(tableEl, renderer, storedWidths) {
         setColumnWidth(tableEl, c.index, width);
         c.th.classList.toggle("aq_th_wrap", width + 6 < c.headerFullWidth);
         c.th.classList.toggle("aq_th_compact", COMPACT_TYPES.has(c.type));
+        c.th.classList.toggle("aq_th_num_compact", !!c.compactNumeric);
     });
 
     // table-layout fixed: el navegador respeta los anchos exactos y el
