@@ -206,6 +206,15 @@ const TYPE_BOUNDS = {
     default: { min: 90, max: 300, extra: 30 },
 };
 
+// Overrides de límites por NOMBRE de campo. Tienen prioridad sobre TYPE_BOUNDS
+// y sobre la detección de numérico compacto. Para columnas cuyo contenido real
+// es corto y no necesitan el ancho que su tipo les daría.
+const FIELD_BOUNDS = {
+    // Empaque (standard_pack_id): el display del empaque es corto
+    // (p. ej. "Tarima x 36 m²"); no requiere el ancho de un many2one normal.
+    standard_pack_id: { min: 72, max: 138, extra: 24 },
+};
+
 // Tipos que ceden espacio primero cuando la tabla no cabe.
 const FLEX_TYPES = new Set([
     "char",
@@ -241,7 +250,7 @@ const COMPACT_TYPES = new Set(["boolean", "toggle"]);
 // Columnas numéricas que deben verse compactas (líneas de la orden de venta:
 // Stock, Solicitado, Asignado). Se identifican por el texto del encabezado
 // para no depender del nombre técnico del campo calculado.
-const COMPACT_NUMERIC_HEADERS = new Set(["stock", "solicitado", "asignado"]);
+const COMPACT_NUMERIC_HEADERS = new Set(["stock", "solicitado", "asignado", "pack"]);
 const COMPACT_NUMERIC_BOUNDS = { min: 46, max: 92, extra: 14 };
 const NUMERIC_TYPES = new Set(["integer", "float", "monetary"]);
 
@@ -399,11 +408,15 @@ function fitColumns(tableEl, renderer, storedWidths) {
         const type = columnTypes[name] || inferTypeFromCells(cells);
 
         const headerText = (th.textContent || "").trim();
+        const fieldBounds = FIELD_BOUNDS[name];
         const compactNumeric =
+            !fieldBounds &&
             NUMERIC_TYPES.has(type) &&
             COMPACT_NUMERIC_HEADERS.has(headerText.toLowerCase());
 
-        const bounds = compactNumeric
+        const bounds = fieldBounds
+            ? fieldBounds
+            : compactNumeric
             ? COMPACT_NUMERIC_BOUNDS
             : TYPE_BOUNDS[type] || TYPE_BOUNDS.default;
 
