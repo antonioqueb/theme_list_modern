@@ -213,6 +213,9 @@ const FIELD_BOUNDS = {
     // Empaque (standard_pack_id): el display del empaque es corto
     // (p. ej. "Tarima x 36 m²"); no requiere el ancho de un many2one normal.
     standard_pack_id: { min: 72, max: 138, extra: 24 },
+    // Pack (pack_qty): número de paquetes, casi siempre de 1-2 dígitos.
+    // Más angosta que el resto de numéricas compactas (conserva su estilo).
+    pack_qty: { min: 25, max: 46, extra: 14 },
 };
 
 // Tipos que ceden espacio primero cuando la tabla no cabe.
@@ -410,7 +413,6 @@ function fitColumns(tableEl, renderer, storedWidths) {
         const headerText = (th.textContent || "").trim();
         const fieldBounds = FIELD_BOUNDS[name];
         const compactNumeric =
-            !fieldBounds &&
             NUMERIC_TYPES.has(type) &&
             COMPACT_NUMERIC_HEADERS.has(headerText.toLowerCase());
 

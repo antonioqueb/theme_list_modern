@@ -282,3 +282,27 @@
         left: 125%;
     }
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Fila seleccionada SIN fondo gris
+   Al marcar/seleccionar una fila, Odoo 19 le pone la clase `table-active`
+   (Bootstrap) y/o `o_data_row_selected`, que pintan la fila de gris mediante
+   las variables --bs-table-*. Aquí se neutraliza ese fondo: la selección sigue
+   indicándose por el checkbox, pero la fila nunca se ve gris.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.o_list_renderer table.o_list_table tbody tr.o_data_row.table-active,
+.o_list_renderer table.o_list_table tbody tr.o_data_row.o_data_row_selected,
+.o_list_renderer table.o_list_table tbody tr.o_data_row.o_row_selected {
+    --bs-table-bg-state: transparent;
+    --bs-table-accent-bg: transparent;
+    background-color: transparent !important;
+
+    > td,
+    > th {
+        --bs-table-bg-state: transparent;
+        --bs-table-accent-bg: transparent;
+        background-color: transparent !important;
+        background-image: none !important;
+    }
+}
