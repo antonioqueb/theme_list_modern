@@ -284,25 +284,34 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   Fila seleccionada SIN fondo gris
-   Al marcar/seleccionar una fila, Odoo 19 le pone la clase `table-active`
-   (Bootstrap) y/o `o_data_row_selected`, que pintan la fila de gris mediante
-   las variables --bs-table-*. Aquí se neutraliza ese fondo: la selección sigue
-   indicándose por el checkbox, pero la fila nunca se ve gris.
+   Fila SIEMPRE en blanco (sin gris al editar / seleccionar / hover)
+   Problema: al hacer clic en un input la fila entra en edición (`o_selected_row`)
+   y Odoo le pone fondo gris, pero el input enfocado queda blanco → contraste feo.
+   También el hover y la selección por checkbox (`table-active`/`o_data_row_selected`)
+   pintan la fila de gris vía variables --bs-table-*.
+   Solución: forzar blanco uniforme en la fila y sus celdas en todos esos estados,
+   para que coincida con los inputs. La selección sigue marcándose por el checkbox.
    ───────────────────────────────────────────────────────────────────────────── */
 
-.o_list_renderer table.o_list_table tbody tr.o_data_row.table-active,
+.o_list_renderer table.o_list_table tbody tr.o_data_row,
+.o_list_renderer table.o_list_table tbody tr.o_data_row:hover,
+.o_list_renderer table.o_list_table tbody tr.o_data_row.o_selected_row,
 .o_list_renderer table.o_list_table tbody tr.o_data_row.o_data_row_selected,
-.o_list_renderer table.o_list_table tbody tr.o_data_row.o_row_selected {
-    --bs-table-bg-state: transparent;
-    --bs-table-accent-bg: transparent;
-    background-color: transparent !important;
+.o_list_renderer table.o_list_table tbody tr.o_data_row.o_row_selected,
+.o_list_renderer table.o_list_table tbody tr.o_data_row.table-active {
+    --bs-table-bg-state: #ffffff;
+    --bs-table-accent-bg: #ffffff;
+    --bs-table-hover-bg: #ffffff;
+    --bs-table-active-bg: #ffffff;
+    background-color: #ffffff !important;
 
     > td,
     > th {
-        --bs-table-bg-state: transparent;
-        --bs-table-accent-bg: transparent;
-        background-color: transparent !important;
+        --bs-table-bg-state: #ffffff;
+        --bs-table-accent-bg: #ffffff;
+        --bs-table-hover-bg: #ffffff;
+        --bs-table-active-bg: #ffffff;
+        background-color: #ffffff !important;
         background-image: none !important;
     }
 }
