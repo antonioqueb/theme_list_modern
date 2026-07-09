@@ -224,11 +224,11 @@ const FIELD_BOUNDS = {
 const MODEL_FIELD_BOUNDS = {
     "sale.order.line": {
         // Stock: número corto, columna muy compacta.
-        tc_available_internal_qty: { min: 42, max: 64, extra: 10 },
+        tc_available_internal_qty: { min: 36, max: 52, extra: 6, wordPad: 6 },
         // Empaque: una sola línea, ~mitad del ancho anterior.
         standard_pack_id: { min: 56, max: 84, extra: 14 },
-        // Pack: 1-2 dígitos, ~30% del ancho anterior.
-        pack_qty: { min: 22, max: 34, extra: 8 },
+        // Pack: 1-2 dígitos, lo mínimo que deja leer el título.
+        pack_qty: { min: 18, max: 30, extra: 6, wordPad: 4 },
         // Unidad: valores tipo m², pz, kg.
         product_uom_id: { min: 44, max: 70, extra: 12 },
         // Impuestos: solo el badge del impuesto.
@@ -469,9 +469,14 @@ function fitColumns(tableEl, renderer, storedWidths) {
         const longestWord = headerText
             .split(/\s+/)
             .reduce((a, b) => (b.length > a.length ? b : a), "");
+        const wordPadding =
+            bounds.wordPad !== undefined
+                ? bounds.wordPad
+                : compact
+                ? COMPACT_WORD_PADDING
+                : HEADER_WORD_PADDING;
         const headerWordWidth =
-            textWidth(longestWord, headerFont) +
-            (compact ? COMPACT_WORD_PADDING : HEADER_WORD_PADDING);
+            textWidth(longestWord, headerFont) + wordPadding;
 
         let ideal;
         if (headerFullWidth <= Math.max(contentWidth, bounds.min)) {
