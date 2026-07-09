@@ -282,3 +282,29 @@
         left: 125%;
     }
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Impuestos (tax_ids): la celda puede ser angosta sin que el badge la infle.
+   Los tags no envuelven a segunda línea ni desbordan; se truncan con ellipsis.
+   Complementa (no reemplaza) la reducción general de padding de tags/badges.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.o_list_renderer table.o_list_table tbody td.o_data_cell[name="tax_ids"] {
+    overflow: hidden;
+
+    .o_field_many2many_tags,
+    .o_field_tags {
+        flex-wrap: nowrap;
+        overflow: hidden;
+        max-width: 100%;
+    }
+
+    .o_tag,
+    .badge {
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        flex-shrink: 1;
+    }
+}

@@ -233,8 +233,17 @@ const MODEL_FIELD_BOUNDS = {
         product_uom_id: { min: 44, max: 70, extra: 12 },
         // Impuestos: solo el badge del impuesto.
         tax_ids: { min: 52, max: 86, extra: 12 },
+        // Producto: principal (absorbe sobrante con tope) y trunca largo.
+        product_template_id: { min: 140, max: 360, extra: 30 },
+        // Descripción: flexible pero controlada, con truncado.
+        name: { min: 120, max: 320, extra: 30 },
     },
 };
+
+// Tope de crecimiento de la columna principal al absorber espacio sobrante.
+// Evita una columna Producto desproporcionada en pantallas anchas: lo que
+// exceda el tope se reparte entre las demás columnas de texto.
+const MAIN_GROW_MAX = 640;
 
 // Tipos que ceden espacio primero cuando la tabla no cabe.
 const FLEX_TYPES = new Set([
@@ -548,7 +557,32 @@ function fitColumns(tableEl, renderer, storedWidths) {
         }
 
         if (grower) {
-            grower.width += available - total;
+            let leftover = available - total;
+            const growth = Math.min(
+                leftover,
+                Math.max(0, MAIN_GROW_MAX - grower.width)
+            );
+            grower.width += growth;
+            leftover -= growth;
+
+            if (leftover > 0.5) {
+                // El excedente sobre el tope se reparte entre las demás
+                // columnas de texto, proporcional a su ancho (las numéricas
+                // compactas no se inflan).
+                const others = candidates.filter(
+                    (c) => c !== grower && GROW_TYPES.has(c.type)
+                );
+                const base = others.reduce((sum, c) => sum + c.width, 0);
+                if (others.length && base > 0) {
+                    others.forEach((c) => {
+                        c.width += leftover * (c.width / base);
+                    });
+                } else {
+                    // Sin columnas alternativas: la principal conserva el
+                    // sobrante para que la tabla siga llenando el contenedor.
+                    grower.width += leftover;
+                }
+            }
         }
     }
 
