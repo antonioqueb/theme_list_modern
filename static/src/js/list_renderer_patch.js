@@ -28,7 +28,7 @@ import { ListRenderer } from "@web/views/list/list_renderer";
 import { onMounted, onPatched, onWillUnmount } from "@odoo/owl";
 
 const STORAGE_BASE_PREFIX = "alphaqueb:list_column_widths";
-const STORAGE_PREFIX = `${STORAGE_BASE_PREFIX}:v3`;
+const STORAGE_PREFIX = `${STORAGE_BASE_PREFIX}:v4`;
 const MIN_WIDTH = 48;
 const MAX_WIDTH = 1400;
 const HARD_MIN_WIDTH = 40;
@@ -218,6 +218,24 @@ const FIELD_BOUNDS = {
     pack_qty: { min: 25, max: 46, extra: 14 },
 };
 
+// Overrides por MODELO + campo: SOLO afectan las listas del modelo indicado,
+// nunca globalmente. Tienen prioridad sobre FIELD_BOUNDS y TYPE_BOUNDS.
+// El contenido largo se trunca con puntos suspensivos (table-layout fixed).
+const MODEL_FIELD_BOUNDS = {
+    "sale.order.line": {
+        // Stock: número corto, columna muy compacta.
+        tc_available_internal_qty: { min: 42, max: 64, extra: 10 },
+        // Empaque: una sola línea, ~mitad del ancho anterior.
+        standard_pack_id: { min: 56, max: 84, extra: 14 },
+        // Pack: 1-2 dígitos, ~30% del ancho anterior.
+        pack_qty: { min: 22, max: 34, extra: 8 },
+        // Unidad: valores tipo m², pz, kg.
+        product_uom_id: { min: 44, max: 70, extra: 12 },
+        // Impuestos: solo el badge del impuesto.
+        tax_ids: { min: 52, max: 86, extra: 12 },
+    },
+};
+
 // Tipos que ceden espacio primero cuando la tabla no cabe.
 const FLEX_TYPES = new Set([
     "char",
@@ -388,6 +406,7 @@ function fitColumns(tableEl, renderer, storedWidths) {
     );
 
     const columnTypes = getColumnTypes(renderer);
+    const modelBounds = MODEL_FIELD_BOUNDS[getRendererModel(renderer)] || {};
 
     const sampleTd = tableEl.querySelector("tbody td.o_data_cell");
     const cellFont = sampleTd ? cssFont(sampleTd) : cssFont(tableEl);
@@ -411,7 +430,7 @@ function fitColumns(tableEl, renderer, storedWidths) {
         const type = columnTypes[name] || inferTypeFromCells(cells);
 
         const headerText = (th.textContent || "").trim();
-        const fieldBounds = FIELD_BOUNDS[name];
+        const fieldBounds = modelBounds[name] || FIELD_BOUNDS[name];
         const compactNumeric =
             NUMERIC_TYPES.has(type) &&
             COMPACT_NUMERIC_HEADERS.has(headerText.toLowerCase());
