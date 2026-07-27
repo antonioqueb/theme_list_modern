@@ -1,0 +1,303 @@
+// ═══════════════════════════════════════════════════════════════════════════
+// Búsqueda Global Inteligente — barra fija del home (glassmorphism)
+//
+// Visibilidad por CSS puro: la barra solo existe visualmente cuando el menú
+// principal (o_home_menu) está en pantalla. Cero JS de detección, cero
+// observers, cero acoplamiento a los internos del HomeMenu de Enterprise.
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Visibilidad por CSS puro: web_enterprise pone 'o_home_menu_background'
+// en el <body> mientras el menú principal está en pantalla (confirmado en
+// el DOM de producción). Respaldo adicional: :has(.o_home_menu).
+.som-gsb {
+    display: none;
+    position: fixed;
+    top: 64px;                      // debajo del navbar del home
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(720px, 92vw);
+    z-index: 1055;                  // sobre el home, bajo los diálogos (1060+)
+}
+
+body.o_home_menu_background .som-gsb,
+body:has(.o_home_menu) .som-gsb {
+    display: block;
+}
+
+// ─── Barra ──────────────────────────────────────────────────────────────────
+.som-gsb-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 18px;
+    height: 52px;
+    border-radius: 26px;
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(16px) saturate(1.4);
+    -webkit-backdrop-filter: blur(16px) saturate(1.4);
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    box-shadow:
+        0 8px 32px rgba(15, 23, 42, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    transition: box-shadow 0.2s ease, background 0.2s ease;
+
+    &:focus-within {
+        background: rgba(255, 255, 255, 0.72);
+        box-shadow:
+            0 12px 40px rgba(15, 23, 42, 0.25),
+            inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    }
+
+    &.som-gsb-bar-open {
+        border-bottom-left-radius: 14px;
+        border-bottom-right-radius: 14px;
+    }
+}
+
+.som-gsb-icon {
+    color: #475569;
+    font-size: 16px;
+    flex: 0 0 auto;
+}
+
+.som-gsb-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 15px;
+    color: #0f172a;
+
+    &::placeholder {
+        color: #64748b;
+    }
+}
+
+.som-gsb-spinner {
+    color: #64748b;
+    flex: 0 0 auto;
+}
+
+.som-gsb-clear {
+    flex: 0 0 auto;
+    border: none;
+    background: rgba(15, 23, 42, 0.08);
+    color: #475569;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s ease;
+
+    &:hover {
+        background: rgba(15, 23, 42, 0.16);
+    }
+}
+
+// ─── Panel de resultados ────────────────────────────────────────────────────
+.som-gsb-panel {
+    margin-top: 8px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.82);
+    backdrop-filter: blur(20px) saturate(1.5);
+    -webkit-backdrop-filter: blur(20px) saturate(1.5);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 16px 48px rgba(15, 23, 42, 0.28);
+    overflow: hidden;
+}
+
+.som-gsb-results {
+    max-height: min(58vh, 560px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 6px;
+}
+
+.som-gsb-hint {
+    padding: 18px 20px;
+    font-size: 13.5px;
+    color: #475569;
+    text-align: center;
+}
+
+.som-gsb-error {
+    color: #b45309;
+}
+
+// ─── Grupos ─────────────────────────────────────────────────────────────────
+.som-gsb-group {
+    & + & {
+        margin-top: 4px;
+    }
+}
+
+.som-gsb-group-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    border: none;
+    background: transparent;
+    padding: 8px 12px 4px;
+    cursor: pointer;
+    text-align: left;
+
+    > .fa {
+        color: #2563eb;
+        font-size: 12px;
+        width: 16px;
+        text-align: center;
+    }
+
+    .som-gsb-group-label {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.7px;
+        color: #475569;
+    }
+
+    .som-gsb-group-count {
+        font-size: 10.5px;
+        font-weight: 700;
+        color: #2563eb;
+        background: rgba(37, 99, 235, 0.12);
+        border-radius: 100px;
+        padding: 1px 7px;
+    }
+
+    .som-gsb-group-all {
+        margin-left: auto;
+        font-size: 11px;
+        font-weight: 600;
+        color: #94a3b8;
+        opacity: 0;
+        transition: opacity 0.15s ease;
+    }
+
+    &:hover .som-gsb-group-all {
+        opacity: 1;
+        color: #2563eb;
+    }
+}
+
+// ─── Renglones ──────────────────────────────────────────────────────────────
+.som-gsb-row {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    width: 100%;
+    border: none;
+    background: transparent;
+    padding: 7px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.12s ease;
+
+    .som-gsb-row-name {
+        font-size: 13.5px;
+        font-weight: 600;
+        color: #0f172a;
+        white-space: nowrap;
+    }
+
+    .som-gsb-row-sub {
+        font-size: 12px;
+        color: #64748b;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        min-width: 0;
+        flex: 1 1 auto;
+    }
+
+    .som-gsb-row-go {
+        margin-left: auto;
+        flex: 0 0 auto;
+        font-size: 11px;
+        color: #94a3b8;
+        opacity: 0;
+        transition: opacity 0.12s ease;
+        align-self: center;
+    }
+
+    &:hover,
+    &.active {
+        background: rgba(37, 99, 235, 0.10);
+
+        .som-gsb-row-go {
+            opacity: 1;
+        }
+    }
+
+    &.active {
+        outline: 1.5px solid rgba(37, 99, 235, 0.35);
+        outline-offset: -1.5px;
+    }
+}
+
+// ─── Pie ────────────────────────────────────────────────────────────────────
+.som-gsb-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 16px;
+    border-top: 1px solid rgba(15, 23, 42, 0.07);
+    font-size: 11px;
+    color: #64748b;
+
+    kbd {
+        display: inline-block;
+        padding: 1px 5px;
+        margin: 0 1px;
+        border-radius: 4px;
+        border: 1px solid rgba(15, 23, 42, 0.15);
+        background: rgba(255, 255, 255, 0.7);
+        font-size: 10px;
+        color: #475569;
+    }
+}
+
+// ─── Modo oscuro ────────────────────────────────────────────────────────────
+@media (prefers-color-scheme: dark) {
+    .som-gsb-bar {
+        background: rgba(30, 41, 59, 0.6);
+        border-color: rgba(255, 255, 255, 0.12);
+
+        &:focus-within {
+            background: rgba(30, 41, 59, 0.8);
+        }
+    }
+
+    .som-gsb-input {
+        color: #f1f5f9;
+
+        &::placeholder {
+            color: #94a3b8;
+        }
+    }
+
+    .som-gsb-panel {
+        background: rgba(15, 23, 42, 0.88);
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .som-gsb-row .som-gsb-row-name {
+        color: #f1f5f9;
+    }
+
+    .som-gsb-hint,
+    .som-gsb-group-head .som-gsb-group-label {
+        color: #cbd5e1;
+    }
+
+    .som-gsb-footer {
+        border-top-color: rgba(255, 255, 255, 0.08);
+    }
+}

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="theme_list_modern.SomGlobalSearchBar">
+        <div class="som-gsb" t-ref="root">
+
+            <!-- Barra de búsqueda (glassmorphism) -->
+            <div class="som-gsb-bar" t-att-class="{ 'som-gsb-bar-open': state.open }">
+                <i class="fa fa-search som-gsb-icon" title="Buscar"/>
+                <input type="text"
+                       t-ref="input"
+                       class="som-gsb-input"
+                       placeholder="Buscar folios, lotes, productos, órdenes, contactos…"
+                       t-att-value="state.term"
+                       t-on-input="onInput"
+                       t-on-focus="onFocus"
+                       t-on-keydown="onKeydown"/>
+                <i t-if="state.loading" class="fa fa-circle-o-notch fa-spin som-gsb-spinner" title="Buscando"/>
+                <button t-if="state.term and !state.loading"
+                        class="som-gsb-clear"
+                        t-on-click="clear"
+                        title="Limpiar búsqueda">
+                    <i class="fa fa-times" title="Limpiar"/>
+                </button>
+            </div>
+
+            <!-- Panel de resultados -->
+            <div t-if="state.open" class="som-gsb-panel">
+
+                <div t-if="state.term.trim().length &lt; 2" class="som-gsb-hint">
+                    Escribe al menos 2 caracteres…
+                </div>
+
+                <div t-elif="state.failed" class="som-gsb-hint som-gsb-error">
+                    <i class="fa fa-exclamation-triangle me-1" title="Error"/>
+                    No se pudo completar la búsqueda. Intenta de nuevo.
+                </div>
+
+                <div t-elif="state.searched and !state.groups.length and !state.loading"
+                     class="som-gsb-hint">
+                    Sin coincidencias para
+                    "<t t-esc="state.term"/>" — revisa el folio o intenta con menos caracteres.
+                </div>
+
+                <t t-else="">
+                    <div class="som-gsb-results">
+                        <t t-foreach="state.groups" t-as="group" t-key="group.model">
+                            <div class="som-gsb-group">
+                                <button class="som-gsb-group-head"
+                                        t-on-click="() => this.openGroup(group)"
+                                        title="Abrir la lista completa">
+                                    <i t-att-class="'fa ' + group.icon" title=""/>
+                                    <span class="som-gsb-group-label" t-esc="group.label"/>
+                                    <span class="som-gsb-group-count" t-esc="group.records.length"/>
+                                    <span class="som-gsb-group-all">
+                                        ver todos <i class="fa fa-angle-right" title=""/>
+                                    </span>
+                                </button>
+
+                                <t t-foreach="group.records" t-as="record" t-key="record.id">
+                                    <button class="som-gsb-row"
+                                            t-att-class="{ active: rowIndex(group.model, record.id) === state.activeIndex }"
+                                            t-on-click="() => this.openRecord(group.model, record.id)">
+                                        <span class="som-gsb-row-name" t-esc="record.name"/>
+                                        <span t-if="record.sub" class="som-gsb-row-sub" t-esc="record.sub"/>
+                                        <i class="fa fa-external-link som-gsb-row-go" title="Abrir"/>
+                                    </button>
+                                </t>
+                            </div>
+                        </t>
+                    </div>
+
+                    <div class="som-gsb-footer">
+                        <span><t t-esc="totalCount"/> resultados</span>
+                        <span class="som-gsb-keys">
+                            <kbd>↑</kbd><kbd>↓</kbd> navegar · <kbd>Enter</kbd> abrir · <kbd>Esc</kbd> cerrar
+                        </span>
+                    </div>
+                </t>
+            </div>
+        </div>
+    </t>
+
+</templates>
