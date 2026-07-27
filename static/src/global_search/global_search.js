@@ -15,12 +15,16 @@
  * - Listener global de click registrado UNA vez y removido en unmount
  *   (higiene de ciclo de vida aunque el componente viva toda la sesión).
  */
-import { Component, useState, useRef, onWillUnmount } from "@odoo/owl";
+import { Component, useState, useRef, onMounted, onWillUnmount } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 
 const DEBOUNCE_MS = 300;
 const MIN_CHARS = 2;
+const GSB_VERSION = "19.0.21.1.0";
+
+// Log de diagnóstico #1: el archivo llegó al bundle y se ejecutó.
+console.log(`[SOM GLOBAL SEARCH] módulo cargado (v${GSB_VERSION})`);
 
 export class SomGlobalSearchBar extends Component {
     static template = "theme_list_modern.SomGlobalSearchBar";
@@ -57,6 +61,19 @@ export class SomGlobalSearchBar extends Component {
         // con 'o_home_menu_background' mientras el menú principal está en
         // pantalla (verificado en el DOM de producción). Cero JS de
         // detección: el nodo existe siempre y el CSS lo muestra solo ahí.
+
+        onMounted(() => {
+            // Log de diagnóstico #3: el componente montó y su nodo existe.
+            const el = this.rootRef.el;
+            const visible = el ? getComputedStyle(el).display !== "none" : false;
+            console.log(
+                "[SOM GLOBAL SEARCH] montado.",
+                "nodo .som-gsb en DOM:", !!el,
+                "| visible ahora:", visible,
+                "| body.o_home_menu_background:",
+                document.body.classList.contains("o_home_menu_background")
+            );
+        });
 
         onWillUnmount(() => {
             if (this._debounceTimer) {
@@ -237,3 +254,9 @@ export class SomGlobalSearchBar extends Component {
 registry.category("main_components").add("SomGlobalSearchBar", {
     Component: SomGlobalSearchBar,
 });
+
+// Log de diagnóstico #2: quedó registrado como main_component.
+console.log(
+    "[SOM GLOBAL SEARCH] registrado en main_components:",
+    registry.category("main_components").contains("SomGlobalSearchBar")
+);
