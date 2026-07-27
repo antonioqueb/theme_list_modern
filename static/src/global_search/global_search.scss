@@ -267,6 +267,9 @@ body:has(.o_home_menu) .som-gsb {
 }
 
 // ─── Modo oscuro ────────────────────────────────────────────────────────────
+// TODOS los textos claros: el panel es gris oscuro y cualquier gris medio
+// (#475569 / #64748b) se pierde. Escala: #f1f5f9 el valor buscado, #e2e8f0
+// los textos secundarios, #cbd5e1 los terciarios.
 @media (prefers-color-scheme: dark) {
     .som-gsb-bar {
         background: rgba(30, 41, 59, 0.3);
@@ -274,6 +277,20 @@ body:has(.o_home_menu) .som-gsb {
 
         &:focus-within {
             background: rgba(30, 41, 59, 0.5);
+        }
+    }
+
+    .som-gsb-icon,
+    .som-gsb-spinner {
+        color: #cbd5e1;
+    }
+
+    .som-gsb-clear {
+        background: rgba(241, 245, 249, 0.12);
+        color: #e2e8f0;
+
+        &:hover {
+            background: rgba(241, 245, 249, 0.22);
         }
     }
 
@@ -290,16 +307,61 @@ body:has(.o_home_menu) .som-gsb {
         border-color: rgba(255, 255, 255, 0.1);
     }
 
-    .som-gsb-row .som-gsb-row-name {
-        color: #f1f5f9;
+    .som-gsb-row {
+        .som-gsb-row-name {
+            color: #f1f5f9;
+        }
+
+        .som-gsb-row-sub {
+            color: #cbd5e1;
+        }
+
+        .som-gsb-row-go {
+            color: #cbd5e1;
+        }
+
+        &:hover,
+        &.active {
+            background: rgba(147, 197, 253, 0.14);
+        }
     }
 
     .som-gsb-hint,
     .som-gsb-group-head .som-gsb-group-label {
-        color: #cbd5e1;
+        color: #e2e8f0;
+    }
+
+    .som-gsb-error {
+        color: #fbbf24;
+    }
+
+    .som-gsb-group-head {
+        > .fa {
+            color: #93c5fd;
+        }
+
+        .som-gsb-group-count {
+            color: #bfdbfe;
+            background: rgba(147, 197, 253, 0.18);
+        }
+
+        .som-gsb-group-all {
+            color: #cbd5e1;
+        }
+
+        &:hover .som-gsb-group-all {
+            color: #93c5fd;
+        }
     }
 
     .som-gsb-footer {
         border-top-color: rgba(255, 255, 255, 0.08);
+        color: #cbd5e1;
+
+        kbd {
+            border-color: rgba(255, 255, 255, 0.25);
+            background: rgba(255, 255, 255, 0.12);
+            color: #e2e8f0;
+        }
     }
 }
