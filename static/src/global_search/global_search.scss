@@ -71,13 +71,9 @@ body:has(.o_home_menu) .som-gsb {
     color: #0f172a;
 
     &::placeholder {
-        color: #374151;               // gris oscuro en reposo
-        transition: color 0.15s ease;
-    }
-
-    &:focus::placeholder {
-        color: #ffffff;               // blanco fuerte con el cursor activo
-        text-shadow: 0 1px 2px rgba(15, 23, 42, 0.35); // legible sobre fondos claros
+        color: #ffffff;               // blanco absoluto, SIEMPRE (con o sin foco)
+        text-shadow: 0 1px 3px rgba(15, 23, 42, 0.55); // contraste sobre fondos claros
+        opacity: 1;                   // Firefox atenúa placeholders por defecto
     }
 }
 
@@ -285,10 +281,6 @@ body:has(.o_home_menu) .som-gsb {
         color: #f1f5f9;
 
         &::placeholder {
-            color: #94a3b8;
-        }
-
-        &:focus::placeholder {
             color: #ffffff;
         }
     }

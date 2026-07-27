@@ -1,6 +1,6 @@
 {
     'name': 'Custom List Column Width',
-    'version': '19.0.21.4.0',
+    'version': '19.0.22.0.0',
     'summary': 'Anchos inteligentes de columnas + Búsqueda Global Inteligente (barra fija del home)',
     'category': 'Technical',
     'author': 'Alphaqueb Consulting SAS',
