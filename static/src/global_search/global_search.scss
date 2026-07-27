@@ -12,7 +12,7 @@
 .som-gsb {
     display: none;
     position: fixed;
-    top: 64px;                      // debajo del navbar del home
+    top: 10px;                      // pegada al tope, sobre la franja del navbar (vacía al centro en el home)
     left: 50%;
     transform: translateX(-50%);
     width: clamp(0px, 92vw, 720px);  // clamp: libsass no lo intercepta (min(px,vw) truena)
@@ -32,17 +32,17 @@ body:has(.o_home_menu) .som-gsb {
     padding: 0 18px;
     height: 52px;
     border-radius: 26px;
-    background: rgba(255, 255, 255, 0.55);
-    backdrop-filter: blur(16px) saturate(1.4);
-    -webkit-backdrop-filter: blur(16px) saturate(1.4);
-    border: 1px solid rgba(255, 255, 255, 0.45);
+    background: rgba(255, 255, 255, 0.22);
+    backdrop-filter: blur(22px) saturate(1.6);
+    -webkit-backdrop-filter: blur(22px) saturate(1.6);
+    border: 1px solid rgba(255, 255, 255, 0.35);
     box-shadow:
         0 8px 32px rgba(15, 23, 42, 0.18),
         inset 0 1px 0 rgba(255, 255, 255, 0.6);
     transition: box-shadow 0.2s ease, background 0.2s ease;
 
     &:focus-within {
-        background: rgba(255, 255, 255, 0.72);
+        background: rgba(255, 255, 255, 0.38);
         box-shadow:
             0 12px 40px rgba(15, 23, 42, 0.25),
             inset 0 1px 0 rgba(255, 255, 255, 0.7);
@@ -103,9 +103,9 @@ body:has(.o_home_menu) .som-gsb {
 .som-gsb-panel {
     margin-top: 8px;
     border-radius: 16px;
-    background: rgba(255, 255, 255, 0.82);
-    backdrop-filter: blur(20px) saturate(1.5);
-    -webkit-backdrop-filter: blur(20px) saturate(1.5);
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(26px) saturate(1.6);
+    -webkit-backdrop-filter: blur(26px) saturate(1.6);
     border: 1px solid rgba(255, 255, 255, 0.5);
     box-shadow: 0 16px 48px rgba(15, 23, 42, 0.28);
     overflow: hidden;
@@ -267,11 +267,11 @@ body:has(.o_home_menu) .som-gsb {
 // ─── Modo oscuro ────────────────────────────────────────────────────────────
 @media (prefers-color-scheme: dark) {
     .som-gsb-bar {
-        background: rgba(30, 41, 59, 0.6);
+        background: rgba(30, 41, 59, 0.3);
         border-color: rgba(255, 255, 255, 0.12);
 
         &:focus-within {
-            background: rgba(30, 41, 59, 0.8);
+            background: rgba(30, 41, 59, 0.5);
         }
     }
 
@@ -284,7 +284,7 @@ body:has(.o_home_menu) .som-gsb {
     }
 
     .som-gsb-panel {
-        background: rgba(15, 23, 42, 0.88);
+        background: rgba(15, 23, 42, 0.68);
         border-color: rgba(255, 255, 255, 0.1);
     }
 
