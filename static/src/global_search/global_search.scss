@@ -15,7 +15,7 @@
     top: 64px;                      // debajo del navbar del home
     left: 50%;
     transform: translateX(-50%);
-    width: min(720px, 92vw);
+    width: clamp(0px, 92vw, 720px);  // clamp: libsass no lo intercepta (min(px,vw) truena)
     z-index: 1055;                  // sobre el home, bajo los diálogos (1060+)
 }
 
@@ -112,7 +112,7 @@ body:has(.o_home_menu) .som-gsb {
 }
 
 .som-gsb-results {
-    max-height: min(58vh, 560px);
+    max-height: clamp(0px, 58vh, 560px);
     overflow-y: auto;
     overscroll-behavior: contain;
     padding: 6px;
