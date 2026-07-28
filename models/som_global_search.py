@@ -94,7 +94,15 @@ class SomGlobalSearch(models.AbstractModel):
                 'model': 'stock.lot',
                 'label': _('Lotes / Placas'),
                 'icon': 'fa-barcode',
-                'build_domain': lambda term: [('name', 'ilike', term)],
+                # Incluye lotes archivados (entregados/dados de baja): el
+                # front los enruta al Walkthrough en vez del Inventario
+                # Visual. El término explícito de active desactiva el
+                # filtro automático active_test.
+                'build_domain': lambda term: (
+                    [('name', 'ilike', term)]
+                    + ([('active', 'in', [True, False])]
+                       if 'active' in self.env['stock.lot']._fields else [])
+                ),
                 'describe': lambda r: r.product_id.display_name or '',
             },
             {
@@ -173,6 +181,36 @@ class SomGlobalSearch(models.AbstractModel):
     # RPC principal
     # ------------------------------------------------------------------
     @api.model
+    def _annotate_lot_stock(self, rows):
+        """Marca cada fila de lote con has_stock: True si aún tiene
+        existencias (internal/transit/production). El front usa la marca
+        para abrir el Inventario Visual (con stock) o el Walkthrough
+        (entregado / dado de baja)."""
+        lot_ids = [r['id'] for r in rows]
+        if not lot_ids:
+            return
+        in_stock = set()
+        try:
+            groups = self.env['stock.quant'].sudo().read_group(
+                [
+                    ('lot_id', 'in', lot_ids),
+                    ('quantity', '>', 0),
+                    ('location_id.usage', 'in', ['internal', 'transit', 'production']),
+                ],
+                ['lot_id'],
+                ['lot_id'],
+            )
+            in_stock = {g['lot_id'][0] for g in groups if g.get('lot_id')}
+        except Exception:
+            _logger.exception(
+                "[GLOBAL SEARCH] No se pudo calcular stock de lotes; "
+                "se asume que todos tienen existencias."
+            )
+            in_stock = set(lot_ids)
+        for row in rows:
+            row['has_stock'] = row['id'] in in_stock
+
+    @api.model
     def search_everything(self, term):
         """Busca `term` en todos los objetivos y regresa grupos listos para
         pintar: [{model, label, icon, domain, records:[{id, name, sub}]}].
@@ -205,6 +243,8 @@ class SomGlobalSearch(models.AbstractModel):
                         'name': record.display_name or '',
                         'sub': sub,
                     })
+                if model_name == 'stock.lot':
+                    self._annotate_lot_stock(rows)
                 groups.append({
                     'model': model_name,
                     'label': target['label'],

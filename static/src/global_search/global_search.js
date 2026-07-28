@@ -230,15 +230,18 @@ export class SomGlobalSearchBar extends Component {
     openRecord(model, recordId) {
         this.state.open = false;
         // Lotes: en vez del formulario tradicional, abrir el Inventario
-        // Visual con el lote ya escrito en su campo de búsqueda.
+        // Visual con el lote ya escrito en su campo de búsqueda. Si el lote
+        // ya NO tiene existencias (entregado o dado de baja), se abre el
+        // Walkthrough: el Inventario Visual solo muestra stock actual.
         if (model === "stock.lot") {
             const group = this.state.groups.find((g) => g.model === "stock.lot");
             const rec = group && group.records.find((r) => r.id === recordId);
             if (rec && rec.name) {
+                const exited = rec.has_stock === false;
                 this.action.doAction({
                     type: "ir.actions.client",
-                    tag: "inventory_visual_enhanced",
-                    name: "Inventario Visual",
+                    tag: exited ? "inventory_walkthrough" : "inventory_visual_enhanced",
+                    name: exited ? "Walkthrough" : "Inventario Visual",
                     target: "current",
                     params: { lot_name: rec.name },
                 });
