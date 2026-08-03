@@ -240,6 +240,12 @@ const MODEL_FIELD_BOUNDS = {
     },
 };
 
+// Modelos "contenido primero": la regla "todo cabe en pantalla" NO aplica.
+// Cada columna se dimensiona por su contenido real (más el título) y nunca
+// se encoge por debajo de él; si la suma excede el contenedor, la tabla
+// scrollea horizontal en vez de plegar/truncar columnas.
+const CONTENT_FIRST_MODELS = new Set(["purchase.order.line"]);
+
 // Tope de crecimiento de la columna principal al absorber espacio sobrante.
 // Evita una columna Producto desproporcionada en pantallas anchas: lo que
 // exceda el tope se reparte entre las demás columnas de texto.
@@ -414,8 +420,10 @@ function fitColumns(tableEl, renderer, storedWidths) {
         MAX_MEASURED_ROWS
     );
 
+    const rendererModel = getRendererModel(renderer);
     const columnTypes = getColumnTypes(renderer);
-    const modelBounds = MODEL_FIELD_BOUNDS[getRendererModel(renderer)] || {};
+    const modelBounds = MODEL_FIELD_BOUNDS[rendererModel] || {};
+    const contentFirst = CONTENT_FIRST_MODELS.has(rendererModel);
 
     const sampleTd = tableEl.querySelector("tbody td.o_data_cell");
     const cellFont = sampleTd ? cssFont(sampleTd) : cssFont(tableEl);
@@ -479,23 +487,37 @@ function fitColumns(tableEl, renderer, storedWidths) {
             textWidth(longestWord, headerFont) + wordPadding;
 
         let ideal;
-        if (headerFullWidth <= Math.max(contentWidth, bounds.min)) {
-            ideal = Math.max(contentWidth, bounds.min);
-        } else {
-            // Título más ancho que el contenido: ajustar al contenido y
-            // dejar que el título se envuelva en dos líneas.
-            ideal = Math.max(contentWidth, headerWordWidth, bounds.min);
-        }
-        // En columnas compactas (booleanos, toggles, numéricas compactas)
-        // el título completo manda: la palabra más larga puede superar el
-        // máximo del tipo, pero nunca se corta.
-        ideal = Math.min(ideal, Math.max(bounds.max, compact ? headerWordWidth : 0));
-
-        // Un ancho guardado por el usuario reemplaza al ideal calculado,
-        // pero sigue sujeto al ajuste global de "todo cabe en pantalla".
         const stored = normalizeWidth(storedWidths?.[name]);
-        if (stored) {
-            ideal = stored;
+
+        if (contentFirst) {
+            // Contenido primero: la columna mide lo que su contenido real
+            // necesita (con el título envolviendo en dos líneas si hace
+            // falta). Sin tope de tipo: nada se pliega ni se trunca.
+            ideal = Math.max(contentWidth, headerWordWidth, bounds.min);
+            // Un ancho guardado por el usuario puede AMPLIAR la columna,
+            // pero nunca reducirla por debajo de su contenido.
+            if (stored) {
+                ideal = Math.max(ideal, stored);
+            }
+            ideal = Math.min(ideal, MAX_WIDTH);
+        } else {
+            if (headerFullWidth <= Math.max(contentWidth, bounds.min)) {
+                ideal = Math.max(contentWidth, bounds.min);
+            } else {
+                // Título más ancho que el contenido: ajustar al contenido y
+                // dejar que el título se envuelva en dos líneas.
+                ideal = Math.max(contentWidth, headerWordWidth, bounds.min);
+            }
+            // En columnas compactas (booleanos, toggles, numéricas compactas)
+            // el título completo manda: la palabra más larga puede superar el
+            // máximo del tipo, pero nunca se corta.
+            ideal = Math.min(ideal, Math.max(bounds.max, compact ? headerWordWidth : 0));
+
+            // Un ancho guardado por el usuario reemplaza al ideal calculado,
+            // pero sigue sujeto al ajuste global de "todo cabe en pantalla".
+            if (stored) {
+                ideal = stored;
+            }
         }
 
         // Mínimo inquebrantable: en booleanos/toggles ninguna fase de
@@ -509,10 +531,14 @@ function fitColumns(tableEl, renderer, storedWidths) {
             name,
             type,
             width: ideal,
-            min: Math.min(
-                ideal,
-                Math.max(bounds.min, HARD_MIN_WIDTH, titleFloor)
-            ),
+            // Contenido primero: el mínimo ES el ideal — ninguna fase de
+            // encogimiento puede plegar la columna por debajo del contenido.
+            min: contentFirst
+                ? ideal
+                : Math.min(
+                      ideal,
+                      Math.max(bounds.min, HARD_MIN_WIDTH, titleFloor)
+                  ),
             titleFloor,
             compactNumeric,
             flexible: FLEX_TYPES.has(type),
@@ -527,20 +553,24 @@ function fitColumns(tableEl, renderer, storedWidths) {
     const total = dataCols.reduce((sum, c) => sum + c.width, 0);
 
     if (total > available) {
-        // No cabe: encoger primero las flexibles hasta su mínimo de tipo...
-        let overflow = total - available;
-        overflow = shrinkColumns(
-            dataCols.filter((c) => c.flexible),
-            overflow
-        );
+        // Contenido primero: NO se encoge nada; la tabla crece y el
+        // contenedor scrollea horizontal (overflow-x del CSS).
+        if (!contentFirst) {
+            // No cabe: encoger primero las flexibles hasta su mínimo de tipo...
+            let overflow = total - available;
+            overflow = shrinkColumns(
+                dataCols.filter((c) => c.flexible),
+                overflow
+            );
 
-        // ...y si aún no cabe, encoger todas hasta el mínimo duro,
-        // sin romper el piso del título en booleanos/toggles.
-        if (overflow > 0) {
-            dataCols.forEach((c) => {
-                c.min = Math.min(c.width, Math.max(HARD_MIN_WIDTH, c.titleFloor));
-            });
-            shrinkColumns(dataCols, overflow);
+            // ...y si aún no cabe, encoger todas hasta el mínimo duro,
+            // sin romper el piso del título en booleanos/toggles.
+            if (overflow > 0) {
+                dataCols.forEach((c) => {
+                    c.min = Math.min(c.width, Math.max(HARD_MIN_WIDTH, c.titleFloor));
+                });
+                shrinkColumns(dataCols, overflow);
+            }
         }
     } else if (total < available) {
         // Sobra espacio: lo absorbe ÚNICAMENTE la columna principal
@@ -599,21 +629,45 @@ function fitColumns(tableEl, renderer, storedWidths) {
         c.th.classList.toggle("aq_th_num_compact", !!c.compactNumeric);
     });
 
-    // table-layout fixed: el navegador respeta los anchos exactos y el
-    // contenido largo se trunca en vez de desbordar la pantalla.
+    // table-layout fixed: el navegador respeta los anchos exactos.
     tableEl.style.tableLayout = "fixed";
-    tableEl.style.width = "100%";
-    tableEl.style.maxWidth = "100%";
+
+    const finalTotal = dataCols.reduce((sum, c) => sum + Math.floor(c.width), 0);
+    if (contentFirst && finalTotal + technicalTotal > available) {
+        // Contenido primero desbordado: la tabla mide la suma real de sus
+        // columnas y el contenedor scrollea horizontal — nada se pliega.
+        tableEl.style.width = `${Math.ceil(finalTotal + technicalTotal + 4)}px`;
+        tableEl.style.maxWidth = "none";
+    } else {
+        // Ajustada a pantalla: el contenido largo se trunca en vez de
+        // desbordar (comportamiento original).
+        tableEl.style.width = "100%";
+        tableEl.style.maxWidth = "100%";
+    }
 }
 
-function getFitSignature(tableEl) {
+function getFitSignature(tableEl, contentFirst) {
     const names = getHeaderCells(tableEl)
         .map((th) => getColumnName(th))
         .filter(Boolean)
         .join("|");
-    const hasRows = tableEl.querySelector("tbody tr.o_data_row") ? "1" : "0";
     const containerWidth = getContainerWidth(tableEl);
-    return `${names}::${hasRows}::${containerWidth}`;
+
+    if (!contentFirst) {
+        const hasRows = tableEl.querySelector("tbody tr.o_data_row") ? "1" : "0";
+        return `${names}::${hasRows}::${containerWidth}`;
+    }
+
+    // Contenido primero: el contenido manda, así que un cambio en las filas
+    // (línea nueva, texto más largo tras guardar) debe re-disparar el ajuste.
+    // textContent no incluye lo tecleado en inputs de la fila en edición, por
+    // lo que no hay reajustes (jitter) mientras se escribe.
+    const rows = [...tableEl.querySelectorAll("tbody tr.o_data_row")];
+    let textLen = 0;
+    for (let i = 0; i < Math.min(rows.length, MAX_MEASURED_ROWS); i++) {
+        textLen += (rows[i].textContent || "").length;
+    }
+    return `${names}::${rows.length}::${textLen}::${containerWidth}`;
 }
 
 patch(ListRenderer.prototype, {
@@ -632,7 +686,8 @@ patch(ListRenderer.prototype, {
         const runFit = () => {
             if (!tableEl || !storageKey) return;
 
-            const signature = getFitSignature(tableEl);
+            const contentFirst = CONTENT_FIRST_MODELS.has(getRendererModel(renderer));
+            const signature = getFitSignature(tableEl, contentFirst);
             if (signature === lastFitSignature) return;
             lastFitSignature = signature;
 
