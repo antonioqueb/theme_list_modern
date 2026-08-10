@@ -244,7 +244,13 @@ const MODEL_FIELD_BOUNDS = {
 // Cada columna se dimensiona por su contenido real (más el título) y nunca
 // se encoge por debajo de él; si la suma excede el contenedor, la tabla
 // scrollea horizontal en vez de plegar/truncar columnas.
-const CONTENT_FIRST_MODELS = new Set(["purchase.order.line"]);
+const CONTENT_FIRST_MODELS = new Set([
+    "purchase.order.line",
+    // Calendario de pagos de la OC: sus columnas (incluidas las 3 de
+    // botones) se dimensionan por contenido real y la tabla scrollea en
+    // vez de comprimir/encimar.
+    "purchase.payment.schedule",
+]);
 
 // Tope de crecimiento de la columna principal al absorber espacio sobrante.
 // Evita una columna Producto desproporcionada en pantallas anchas: lo que
@@ -436,7 +442,25 @@ function fitColumns(tableEl, renderer, storedWidths) {
     headerCells.forEach((th, index) => {
         if (isTechnicalColumn(th)) {
             let width = Math.round(th.getBoundingClientRect().width) || 32;
-            width = Math.min(Math.max(width, 24), 80);
+            if (th.classList.contains("o_list_button")) {
+                // Columnas de BOTONES: miden lo que su botón más ancho
+                // necesita (+aire). El tope de 80px de las columnas
+                // técnicas los encimaba unos sobre otros.
+                let btnWidth = 0;
+                for (const row of bodyRows) {
+                    const cell = row.children[index];
+                    if (!cell) continue;
+                    for (const btn of cell.querySelectorAll("button")) {
+                        btnWidth = Math.max(
+                            btnWidth,
+                            Math.ceil(btn.getBoundingClientRect().width)
+                        );
+                    }
+                }
+                width = Math.min(Math.max(btnWidth + 20, 60), 240);
+            } else {
+                width = Math.min(Math.max(width, 24), 80);
+            }
             technicalTotal += width;
             setColumnWidth(tableEl, index, width);
             return;
