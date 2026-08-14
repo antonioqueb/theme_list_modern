@@ -14,3 +14,10 @@ $o-brand-primary: $som-blue;
 
 $o-action: $som-blue;
 $primary: $som-blue;
+
+// ═══ FONDOS NEUTROS ═══
+// El azul es SOLO para acentos y botones. Sin esto, Odoo deriva los
+// fondos claros del color primario y todo se teñía azul cielo — los
+// fondos se fijan neutros/blancos como el tema original.
+$o-webclient-background-color: #f9f9fb;
+$o-view-background-color: #ffffff;
