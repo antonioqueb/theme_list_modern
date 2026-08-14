@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Debranding visual SIN tocar core: el "Powered by Odoo" del login
+         y de los pies de portal (web.brand_promotion_message) pasa a
+         "Powered by SOM GROUP" con el logo de la casa. Solo se reemplaza
+         el t-set del logo: el mecanismo del mensaje queda intacto. -->
+    <template id="som_brand_promotion_message"
+              inherit_id="web.brand_promotion_message"
+              name="SOM GROUP Branding">
+        <xpath expr="//t[@t-set='odoo_logo']" position="replace">
+            <t t-set="odoo_logo">
+                <a target="_blank"
+                   href="https://somgroup.mx"
+                   class="badge text-bg-light">
+                    <img alt="SOM GROUP"
+                         src="/theme_list_modern/static/img/logosom.png"
+                         style="width: auto; height: 1.2em; vertical-align: baseline;"/>
+                </a>
+            </t>
+        </xpath>
+    </template>
+</odoo>
