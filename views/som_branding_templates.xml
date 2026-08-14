@@ -1,22 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <!-- Debranding visual SIN tocar core: el "Powered by Odoo" del login
-         y de los pies de portal (web.brand_promotion_message) pasa a
-         "Powered by SOM GROUP" con el logo de la casa. Solo se reemplaza
-         el t-set del logo: el mecanismo del mensaje queda intacto. -->
-    <template id="som_brand_promotion_message"
-              inherit_id="web.brand_promotion_message"
-              name="SOM GROUP Branding">
-        <xpath expr="//t[@t-set='odoo_logo']" position="replace">
-            <t t-set="odoo_logo">
-                <a target="_blank"
-                   href="https://somgroup.mx"
-                   class="badge text-bg-light">
-                    <img alt="SOM GROUP"
-                         src="/theme_list_modern/static/img/logosom.png"
-                         style="width: auto; height: 1.2em; vertical-align: baseline;"/>
-                </a>
-            </t>
-        </xpath>
-    </template>
+    <!-- Debranding "Powered by Odoo" → "Powered by SOM GROUP".
+         OJO: este módulo se llama theme_*, y Odoo convierte los <template>
+         de módulos theme_* en theme.ir.ui.view (modelo que solo existe con
+         website instalado) — el registry tronaba con KeyError. Por eso la
+         herencia va como <record model="ir.ui.view"> explícito. -->
+    <record id="som_brand_promotion_message" model="ir.ui.view">
+        <field name="name">SOM GROUP Branding</field>
+        <field name="type">qweb</field>
+        <field name="mode">extension</field>
+        <field name="inherit_id" ref="web.brand_promotion_message"/>
+        <field name="key">theme_list_modern.som_brand_promotion_message</field>
+        <field name="arch" type="xml">
+            <xpath expr="//t[@t-set='odoo_logo']" position="replace">
+                <t t-set="odoo_logo">
+                    <a target="_blank"
+                       href="https://somgroup.mx"
+                       class="badge text-bg-light">
+                        <img alt="SOM GROUP"
+                             src="/theme_list_modern/static/img/logosom.png"
+                             style="width: auto; height: 1.2em; vertical-align: baseline;"/>
+                    </a>
+                </t>
+            </xpath>
+        </field>
+    </record>
 </odoo>
