@@ -1,19 +1,35 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
     <!-- Debranding "Powered by Odoo" → "Powered by SOM GROUP".
-         OJO: este módulo se llama theme_*, y Odoo convierte los <template>
-         de módulos theme_* en theme.ir.ui.view (modelo que solo existe con
-         website instalado) — el registry tronaba con KeyError. Por eso la
-         herencia va como <record model="ir.ui.view"> explícito. -->
+         OJO 1: este módulo se llama theme_*, y Odoo convierte los
+         <template> de módulos theme_* en theme.ir.ui.view (modelo que
+         solo existe con website) — va como <record> explícito.
+         OJO 2: Enterprise re-define odoo_logo sobre el mismo template,
+         así que no basta reemplazar la variable: se reemplaza también
+         la SALIDA final (el t-out) y la vista lleva prioridad 99 para
+         aplicar después de cualquier otro heredero. -->
     <record id="som_brand_promotion_message" model="ir.ui.view">
         <field name="name">SOM GROUP Branding</field>
         <field name="type">qweb</field>
         <field name="mode">extension</field>
+        <field name="priority">99</field>
         <field name="inherit_id" ref="web.brand_promotion_message"/>
         <field name="key">theme_list_modern.som_brand_promotion_message</field>
         <field name="arch" type="xml">
             <xpath expr="//t[@t-set='odoo_logo']" position="replace">
                 <t t-set="odoo_logo">
+                    <a target="_blank"
+                       href="https://somgroup.mx"
+                       class="badge text-bg-light">
+                        <img alt="SOM GROUP"
+                             src="/theme_list_modern/static/img/logosom.png"
+                             style="width: auto; height: 1.2em; vertical-align: baseline;"/>
+                    </a>
+                </t>
+            </xpath>
+            <xpath expr="//t[@t-out]" position="replace">
+                <t>
+                    Powered by
                     <a target="_blank"
                        href="https://somgroup.mx"
                        class="badge text-bg-light">
