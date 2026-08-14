@@ -1,0 +1,16 @@
+// ═══ BRANDING SOM: azul de la casa en TODO el backend ═══
+// Este archivo se PREPENDE a web._assets_primary_variables: como las
+// definiciones de Odoo llevan !default, las nuestras ganan y el morado
+// (#714B67) desaparece de raíz — botones, links, acentos, kanban,
+// checkboxes y todo lo que derive del color primario.
+$som-blue: #0b57d0;
+$som-blue-dark: #083b8f;
+
+$o-community-color: $som-blue;
+$o-enterprise-color: $som-blue;
+$o-enterprise-primary-color: $som-blue;
+$o-brand-odoo: $som-blue-dark;
+$o-brand-primary: $som-blue;
+
+$o-action: $som-blue;
+$primary: $som-blue;

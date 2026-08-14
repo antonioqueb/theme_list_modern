@@ -1,0 +1,19 @@
+// Refuerzo de branding: remanentes que no derivan de las variables
+// primarias (estados hardcodeados del tema Enterprise).
+:root {
+    --primary: #0b57d0;
+}
+
+.btn-primary {
+    --btn-bg: #0b57d0;
+    --btn-border-color: #0b57d0;
+    --btn-hover-bg: #083b8f;
+    --btn-hover-border-color: #083b8f;
+    --btn-active-bg: #083b8f;
+    --btn-active-border-color: #083b8f;
+}
+
+.form-check-input:checked {
+    background-color: #0b57d0;
+    border-color: #0b57d0;
+}
