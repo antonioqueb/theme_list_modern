@@ -41,4 +41,7 @@
             </xpath>
         </field>
     </record>
+
+    <!-- Favicon SOM: se re-aplica en cada actualización del módulo -->
+    <function model="res.company" name="_som_apply_brand_favicon"/>
 </odoo>
