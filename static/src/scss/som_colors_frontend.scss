@@ -1,0 +1,9 @@
+// Portal del cliente (frontend): FONDOS BLANCOS/NEUTROS.
+// El azul de marca es SOLO para acentos y botones — sin esto, los
+// fondos del portal se teñían azul al derivarse del color primario.
+body,
+#wrapwrap,
+#wrapwrap > main,
+.o_portal_wrap {
+    background-color: #fff !important;
+}
