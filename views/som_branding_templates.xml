@@ -42,6 +42,26 @@
         </field>
     </record>
 
-    <!-- Favicon SOM: se re-aplica en cada actualización del módulo -->
+    <!-- Favicon SOM. OJO Odoo 19: web.layout ya NO usa res.company.favicon
+         (usa x_icon, solo para PWA, o el favicon estático de Odoo) — el
+         favicon se fija heredando el <link rel="shortcut icon"> del layout
+         base. Como <record> explícito: los <template> en módulos theme_*
+         se convierten a theme.ir.ui.view y tumban el registry. -->
+    <record id="som_web_layout_favicon" model="ir.ui.view">
+        <field name="name">SOM Favicon</field>
+        <field name="type">qweb</field>
+        <field name="mode">extension</field>
+        <field name="priority">99</field>
+        <field name="inherit_id" ref="web.layout"/>
+        <field name="key">theme_list_modern.som_web_layout_favicon</field>
+        <field name="arch" type="xml">
+            <xpath expr="//link[@rel='shortcut icon']" position="attributes">
+                <attribute name="type">image/png</attribute>
+                <attribute name="t-att-href">x_icon or '/theme_list_modern/static/img/logosom.png'</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- El write al favicon de compañía se conserva (portales/legado) -->
     <function model="res.company" name="_som_apply_brand_favicon"/>
 </odoo>
