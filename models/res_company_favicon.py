@@ -19,16 +19,27 @@ class ResCompany(models.Model):
 
     @api.model
     def _som_apply_brand_favicon(self):
+        # GUARDA DURA: esta función corre vía <function> durante la carga de
+        # módulos — cualquier excepción aquí ABORTA el registry completo y
+        # tumba el servidor (pasó el 19 ago: este build de Odoo 19 no tiene
+        # res.company.favicon y el write tronó el arranque de la base).
+        if 'favicon' not in self._fields:
+            _logger.warning(
+                '[SOM BRAND] res.company no tiene campo favicon en este '
+                'build; se omite el branding del favicon.')
+            return False
         try:
             with file_open(
                     'theme_list_modern/static/img/logosom.png', 'rb') as f:
                 data = base64.b64encode(f.read())
+            companies = self.sudo().with_context(active_test=False).search([])
+            companies.write({'favicon': data})
+            _logger.info(
+                '[SOM BRAND] Favicon SOM aplicado a %s compañía(s).',
+                len(companies))
+            return True
         except Exception:
-            _logger.exception('[SOM BRAND] No se pudo leer logosom.png.')
+            _logger.exception(
+                '[SOM BRAND] No se pudo aplicar el favicon; se omite sin '
+                'abortar la carga.')
             return False
-        companies = self.sudo().with_context(active_test=False).search([])
-        companies.write({'favicon': data})
-        _logger.info(
-            '[SOM BRAND] Favicon SOM aplicado a %s compañía(s).',
-            len(companies))
-        return True
