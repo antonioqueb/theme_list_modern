@@ -252,6 +252,15 @@ const CONTENT_FIRST_MODELS = new Set([
     "purchase.payment.schedule",
 ]);
 
+// MÓVIL: comprimir una lista de 10 columnas en 360px deja puros hilos
+// ilegibles. En teléfono TODA lista es contenido-primero: cada columna mide
+// su contenido real y la tabla scrollea horizontal (patrón que ya usaban
+// las listas de compras). El corte 767px es el breakpoint SM de Odoo.
+function isContentFirstList(rendererModel) {
+    if (CONTENT_FIRST_MODELS.has(rendererModel)) return true;
+    return (window.innerWidth || 0) <= 767;
+}
+
 // Tope de crecimiento de la columna principal al absorber espacio sobrante.
 // Evita una columna Producto desproporcionada en pantallas anchas: lo que
 // exceda el tope se reparte entre las demás columnas de texto.
@@ -429,7 +438,7 @@ function fitColumns(tableEl, renderer, storedWidths) {
     const rendererModel = getRendererModel(renderer);
     const columnTypes = getColumnTypes(renderer);
     const modelBounds = MODEL_FIELD_BOUNDS[rendererModel] || {};
-    const contentFirst = CONTENT_FIRST_MODELS.has(rendererModel);
+    const contentFirst = isContentFirstList(rendererModel);
 
     const sampleTd = tableEl.querySelector("tbody td.o_data_cell");
     const cellFont = sampleTd ? cssFont(sampleTd) : cssFont(tableEl);
@@ -710,7 +719,7 @@ patch(ListRenderer.prototype, {
         const runFit = () => {
             if (!tableEl || !storageKey) return;
 
-            const contentFirst = CONTENT_FIRST_MODELS.has(getRendererModel(renderer));
+            const contentFirst = isContentFirstList(getRendererModel(renderer));
             const signature = getFitSignature(tableEl, contentFirst);
             if (signature === lastFitSignature) return;
             lastFitSignature = signature;
