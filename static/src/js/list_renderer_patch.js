@@ -252,13 +252,32 @@ const CONTENT_FIRST_MODELS = new Set([
     "purchase.payment.schedule",
 ]);
 
-// MÓVIL: comprimir una lista de 10 columnas en 360px deja puros hilos
-// ilegibles. En teléfono TODA lista es contenido-primero: cada columna mide
-// su contenido real y la tabla scrollea horizontal (patrón que ya usaban
-// las listas de compras). El corte 767px es el breakpoint SM de Odoo.
-function isContentFirstList(rendererModel) {
-    if (CONTENT_FIRST_MODELS.has(rendererModel)) return true;
+// MÓVIL: el esquema de anchos NO aplica — la lista se pinta NATIVA de
+// Odoo (con su scroll horizontal). Comprimir columnas o re-dimensionarlas
+// por contenido en el teléfono producía un layout extraño; en pantallas
+// chicas el parche entero se hace a un lado y, si dejó estilos puestos
+// (rotación de pantalla), los limpia. 767px = breakpoint SM de Odoo.
+function isSmallScreen() {
     return (window.innerWidth || 0) <= 767;
+}
+
+function resetFittedStyles(tableEl) {
+    tableEl.style.tableLayout = "";
+    tableEl.style.width = "";
+    tableEl.style.maxWidth = "";
+    getHeaderCells(tableEl).forEach((th) => {
+        th.style.width = "";
+        th.classList.remove("aq_th_wrap", "aq_th_compact", "aq_th_num_compact");
+    });
+    tableEl.querySelectorAll("colgroup col").forEach((col) => {
+        col.style.width = "";
+        col.style.minWidth = "";
+        col.style.maxWidth = "";
+    });
+}
+
+function isContentFirstList(rendererModel) {
+    return CONTENT_FIRST_MODELS.has(rendererModel);
 }
 
 // Tope de crecimiento de la columna principal al absorber espacio sobrante.
@@ -718,6 +737,14 @@ patch(ListRenderer.prototype, {
 
         const runFit = () => {
             if (!tableEl || !storageKey) return;
+
+            if (isSmallScreen()) {
+                if (lastFitSignature !== "native-mobile") {
+                    lastFitSignature = "native-mobile";
+                    resetFittedStyles(tableEl);
+                }
+                return;
+            }
 
             const contentFirst = isContentFirstList(getRendererModel(renderer));
             const signature = getFitSignature(tableEl, contentFirst);

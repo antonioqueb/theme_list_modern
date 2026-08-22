@@ -308,3 +308,21 @@
         flex-shrink: 1;
     }
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   MÓVIL: lista NATIVA de Odoo con scroll horizontal real.
+   El esquema de anchos JS no corre en pantallas chicas (ver
+   list_renderer_patch.js); aquí solo se garantiza que la tabla mida lo
+   que su contenido necesita — sin esto el navegador aplasta las
+   columnas para caber en 360px — y que el contenedor scrollee.
+   ══════════════════════════════════════════════════════════════════ */
+@media (max-width: 767px) {
+    .o_list_renderer {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .o_list_renderer .o_list_table {
+        width: max-content;
+        min-width: 100%;
+    }
+}
