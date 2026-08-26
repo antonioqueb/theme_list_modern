@@ -326,3 +326,16 @@
         min-width: 100%;
     }
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   SCROLL HORIZONTAL GARANTIZADO en listas dentro de formularios.
+   Las listas CONTENT-FIRST (purchase.order.line, purchase.payment.schedule)
+   miden más que el contenedor A PROPÓSITO (cada columna a su contenido);
+   si el contenedor del x2many no scrollea, las columnas de la derecha
+   quedan inalcanzables. Donde la tabla sí cabe, no aparece barra alguna.
+   ───────────────────────────────────────────────────────────────────────── */
+.o_form_view .o_field_x2many .o_list_renderer {
+    overflow-x: auto;
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+}
