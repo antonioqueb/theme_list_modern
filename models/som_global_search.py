@@ -43,6 +43,26 @@ class SomGlobalSearch(models.AbstractModel):
             return ''
         return dict(field._description_selection(record.env)).get(value, '')
 
+    def _sale_order_domain(self, term):
+        """Ventas por folio, referencia del cliente y JOB NAME / PROYECTO
+        (x_project_id, lo agrega otro módulo: se usa solo si existe). Así al
+        teclear el nombre del proyecto aparecen las órdenes de ese pedido."""
+        domain = ['|', ('name', 'ilike', term), ('client_order_ref', 'ilike', term)]
+        so_fields = self.env['sale.order']._fields
+        if 'x_project_id' in so_fields:
+            domain = ['|'] + domain + [('x_project_id.name', 'ilike', term)]
+        return domain
+
+    def _sale_order_describe(self, r):
+        project = ''
+        if 'x_project_id' in r._fields and r.x_project_id:
+            project = 'Job: %s' % r.x_project_id.display_name
+        return ' · '.join(filter(None, [
+            r.partner_id.name,
+            project,
+            self._selection_label(r, 'state'),
+        ]))
+
     def _get_targets(self):
         """Lista ordenada de modelos a consultar.
 
@@ -54,14 +74,8 @@ class SomGlobalSearch(models.AbstractModel):
                 'model': 'sale.order',
                 'label': _('Ventas y Cotizaciones'),
                 'icon': 'fa-file-text-o',
-                'build_domain': lambda term: [
-                    '|', ('name', 'ilike', term),
-                    ('client_order_ref', 'ilike', term),
-                ],
-                'describe': lambda r: ' · '.join(filter(None, [
-                    r.partner_id.name,
-                    self._selection_label(r, 'state'),
-                ])),
+                'build_domain': self._sale_order_domain,
+                'describe': self._sale_order_describe,
             },
             {
                 'model': 'purchase.order',
