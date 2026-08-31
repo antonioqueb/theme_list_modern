@@ -205,8 +205,10 @@ class SomGlobalSearch(models.AbstractModel):
             return
         in_stock = set()
         try:
+            # sudo salta las reglas: se acota a las compañías seleccionadas.
             groups = self.env['stock.quant'].sudo().read_group(
                 [
+                    ('company_id', 'in', self.env.companies.ids),
                     ('lot_id', 'in', lot_ids),
                     ('quantity', '>', 0),
                     ('location_id.usage', 'in', ['internal', 'transit', 'production']),
