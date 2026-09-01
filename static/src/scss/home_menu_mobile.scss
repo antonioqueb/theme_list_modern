@@ -1,0 +1,62 @@
+// ═══════════════════════════════════════════════════════════════════════════
+// Menú principal en MÓVIL — dos correcciones:
+//
+// 1) La app de iOS fuerza un layout de LISTA en el home (clase o_ios_app,
+//    "due to Apple AppStore review" en web_enterprise/home_menu.scss). Uso
+//    interno: lo regresamos a la CUADRÍCULA de la web (4 columnas).
+// 2) El buscador global (.som-gsb) es fijo al tope y en pantallas chicas se
+//    encimaba a la primera fila de apps: más margen al grid y safe-area del
+//    notch para la barra.
+//
+// OJO SCSS: nada de min()/max() con unidades mixtas (tumba web.assets_web);
+// anchos con width + max-width.
+// ═══════════════════════════════════════════════════════════════════════════
+
+@media (max-width: 767.98px) {
+
+    // ── 2) aire bajo la barra de búsqueda (todas las plataformas móviles) ──
+    .o_home_menu .o_apps {
+        margin-top: 88px !important;
+    }
+
+    .som-gsb {
+        top: calc(env(safe-area-inset-top, 0px) + 8px);
+        width: 94vw;
+    }
+
+    // ── 1) app iOS: de lista a cuadrícula (neutraliza o_ios_app) ───────────
+    .o_home_menu.o_ios_app {
+        .o_apps {
+            flex-direction: row !important;
+            padding: 0 !important;
+            font-size: inherit !important;
+            // el margin-top de arriba aplica también aquí (misma regla)
+            margin-top: 88px !important;
+
+            > * {
+                width: 25% !important;   // col-3, como la web móvil
+            }
+        }
+
+        .o_app {
+            flex-direction: column !important;
+            justify-content: flex-start !important;
+            align-items: center !important;
+            background-color: transparent !important;
+            padding: 4px !important;
+            width: 100% !important;
+        }
+
+        .o_app_icon {
+            width: 64px !important;
+            max-width: 90%;
+            height: auto !important;
+            aspect-ratio: 1;
+            margin-right: 0 !important;
+        }
+
+        .o_caption {
+            text-align: center !important;
+        }
+    }
+}
