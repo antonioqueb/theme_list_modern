@@ -22,6 +22,47 @@ function looksLikeCsrfError(error, originalError) {
 }
 
 let refreshing = false;
+let lastRefresh = 0;
+
+/* ELIMINACIÓN PROACTIVA: el token muere cuando hay un login posterior en el
+ * mismo navegador (el sid rota). La pestaña vieja siempre RECUPERA EL FOCO
+ * antes de que alguien imprima en ella — ahí renovamos el token en silencio,
+ * así la ventana de falla deja de existir (el handler de abajo queda como
+ * último respaldo). Throttle de 60s para no hacer ruido. */
+async function refreshCsrfToken() {
+    const now = Date.now();
+    if (refreshing || now - lastRefresh < 60000) {
+        return;
+    }
+    refreshing = true;
+    try {
+        const info = await rpc("/web/session/get_session_info", {});
+        if (info && info.csrf_token) {
+            odoo.csrf_token = info.csrf_token;
+            lastRefresh = Date.now();
+        }
+    } catch {
+        // sin red o sesión muerta: el flujo normal de Odoo lo maneja
+    } finally {
+        refreshing = false;
+    }
+}
+
+document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+        refreshCsrfToken();
+    }
+});
+window.addEventListener("focus", () => refreshCsrfToken());
+/* Odoo 19 rota el sid PERIÓDICAMENTE aunque no haya re-login (http.py:
+ * create_time + SESSION_ROTATION_INTERVAL). Una pestaña que nunca pierde el
+ * foco también cruza esa rotación: renovación silenciosa cada 15 min para
+ * que el token jamás quede atrás. */
+setInterval(() => {
+    if (document.visibilityState === "visible") {
+        refreshCsrfToken();
+    }
+}, 15 * 60 * 1000);
 
 function csrfRecoveryHandler(env, error, originalError) {
     if (!looksLikeCsrfError(error, originalError)) {
