@@ -25,6 +25,9 @@ const SKIP_FIELD_NAMES = new Set([
     "website", "url", "link", "path",
     "key", "value", "api_key", "code", "domain", "context", "arch", "xml_id",
     "technical_name", "signature",
+    // Plantillas con expresiones {{ object.x }} / ctx.get(...) (WhatsApp,
+    // correos): en mayúsculas dejan de renderizar (NameError 'OBJECT').
+    "body", "body_html", "template_body", "subject", "wa_body", "message_body",
 ]);
 
 const SKIP_WIDGET_SELECTOR = [
