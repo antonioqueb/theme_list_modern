@@ -115,6 +115,7 @@ Re-autorizar precios</field>
         <field name="description">Excedente que debe facturarse.</field>
         <field name="resolved_domain">[('invoice_status','=','invoiced')]</field>
         <field name="resolved_label">La orden quedó facturada por completo.</field>
+        <field name="shared" eval="True"/>
     </record>
     <record id="kind_credit_note" model="som.activity.kind">
         <field name="key">credit_note</field>
@@ -128,6 +129,7 @@ Re-autorizar precios</field>
         <field name="description">Se asignó menos de lo facturado: hace falta nota de crédito.</field>
         <field name="resolved_domain">[('invoice_ids','any',[('move_type','=','out_refund'),('state','=','posted'),('create_date','>=',activity_date)])]</field>
         <field name="resolved_label">Se publicó la nota de crédito.</field>
+        <field name="shared" eval="True"/>
     </record>
     <record id="kind_cash_formal_payment" model="som.activity.kind">
         <field name="key">cash_formal_payment</field>
@@ -333,6 +335,34 @@ Descuento rechazado</field>
         <field name="description">Aviso al vendedor: un autorizador quitó el IVA de su orden.</field>
         <field name="notice" eval="True"/>
         <field name="notice_days">7</field>
+    </record>
+
+    <record id="kind_price_auth_result" model="som.activity.kind">
+        <field name="key">price_auth_result</field>
+        <field name="name">Resultado de autorización de precios</field>
+        <field name="res_model">price.authorization</field>
+        <field name="summary_prefixes">Autorización Aprobada
+Autorización Rechazada</field>
+        <field name="category">avisos</field>
+        <field name="icon">fa-tag</field>
+        <field name="color">#5a6b7d</field>
+        <field name="sequence">40</field>
+        <field name="notice" eval="True"/>
+        <field name="notice_days">7</field>
+        <field name="description">Aviso al vendedor: su solicitud de precios fue aprobada o rechazada.</field>
+    </record>
+    <record id="kind_delivery_auth_result" model="som.activity.kind">
+        <field name="key">delivery_auth_result</field>
+        <field name="name">Resultado de autorización de entrega</field>
+        <field name="res_model">delivery.auth.request</field>
+        <field name="summary_prefixes">Resultado de autorización de entrega</field>
+        <field name="category">avisos</field>
+        <field name="icon">fa-truck</field>
+        <field name="color">#5a6b7d</field>
+        <field name="sequence">50</field>
+        <field name="notice" eval="True"/>
+        <field name="notice_days">7</field>
+        <field name="description">Aviso al solicitante y al vendedor: la entrega fue autorizada o rechazada.</field>
     </record>
 
     <!-- ══════════ SISTEMA ══════════ -->
