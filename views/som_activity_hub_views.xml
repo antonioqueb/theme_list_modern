@@ -47,6 +47,7 @@
                             <field name="key"/>
                             <field name="res_model" placeholder="sale.order (vacío = cualquier modelo)"/>
                             <field name="summary_prefixes" placeholder="Un prefijo por línea"/>
+                            <field name="group_xmlids" placeholder="modulo.group_x, modulo.group_y"/>
                         </group>
                         <group string="Presentación">
                             <field name="category"/>

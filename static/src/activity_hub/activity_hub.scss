@@ -386,6 +386,7 @@
         font-weight: 400;
         &:hover { border-color: var(--som-blue); }
         &-off { opacity: 0.6; }
+        &-locked { cursor: not-allowed; background: #f3f4f6; }
         &-text { display: flex; flex-direction: column; gap: 2px; flex: 1; }
         &-name { font-weight: 600; display: flex; align-items: center; gap: 6px; }
         &-desc { color: var(--som-muted); font-size: 12.5px; }
@@ -411,6 +412,7 @@
             transition: left 0.15s ease;
         }
         &.on { background: var(--som-blue); .som-hub-switch-knob { left: 21px; } }
+        &.disabled { opacity: 0.45; }
     }
 
     // ─── Móvil ───

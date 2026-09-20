@@ -22,6 +22,7 @@ Re-autorizar precios</field>
         <field name="sequence">10</field>
         <field name="shared" eval="True"/>
         <field name="description">Solicitudes de precio bajo lista que requieren un Autorizador de Precios.</field>
+        <field name="group_xmlids">inventory_shopping_cart.group_price_authorizer</field>
     </record>
     <record id="kind_discount_auth" model="som.activity.kind">
         <field name="key">discount_auth</field>
@@ -34,6 +35,7 @@ Re-autorizar precios</field>
         <field name="sequence">20</field>
         <field name="shared" eval="True"/>
         <field name="description">Descuentos por encima del umbral retenidos hasta autorizar.</field>
+        <field name="group_xmlids">inventory_shopping_cart.group_price_authorizer</field>
     </record>
     <record id="kind_iva_auth" model="som.activity.kind">
         <field name="key">iva_auth</field>
@@ -48,6 +50,7 @@ Re-autorizar precios</field>
         <field name="description">Solicitud de exención de IVA en una orden de venta.</field>
         <field name="resolved_domain">[('x_iva_exempt_state','!=','requested')]</field>
         <field name="resolved_label">La solicitud de exención ya se resolvió.</field>
+        <field name="group_xmlids">inventory_shopping_cart.group_price_authorizer</field>
     </record>
     <record id="kind_delivery_auth" model="som.activity.kind">
         <field name="key">delivery_auth</field>
@@ -60,6 +63,7 @@ Re-autorizar precios</field>
         <field name="sequence">40</field>
         <field name="shared" eval="True"/>
         <field name="description">Entregas sin pago completo que requieren un aprobador.</field>
+        <field name="group_xmlids">sale_delivery_auth.group_delivery_approver</field>
     </record>
     <record id="kind_floor_violation" model="som.activity.kind">
         <field name="key">floor_violation</field>
@@ -74,6 +78,7 @@ Re-autorizar precios</field>
         <field name="description">Alerta a los autorizadores: una línea quedó por debajo del piso autorizado.</field>
         <field name="notice" eval="True"/>
         <field name="notice_days">7</field>
+        <field name="group_xmlids">inventory_shopping_cart.group_price_authorizer</field>
     </record>
 
     <!-- ══════════ COBRANZA Y PAGOS ══════════ -->
@@ -89,6 +94,7 @@ Re-autorizar precios</field>
         <field name="description">Comprobante o cobro recibido que debe aplicarse a la orden.</field>
         <field name="resolved_domain">[('delivery_is_fully_paid','=',True)]</field>
         <field name="resolved_label">La orden quedó pagada.</field>
+        <field name="group_xmlids">account.group_account_invoice</field>
     </record>
     <record id="kind_overcharge_collect" model="som.activity.kind">
         <field name="key">overcharge_collect</field>
@@ -102,6 +108,7 @@ Re-autorizar precios</field>
         <field name="description">La asignación real superó lo pagado: hay excedente por cobrar.</field>
         <field name="resolved_domain">[('delivery_is_fully_paid','=',True)]</field>
         <field name="resolved_label">La orden quedó pagada.</field>
+        <field name="group_xmlids">account.group_account_invoice</field>
     </record>
     <record id="kind_overcharge_invoice" model="som.activity.kind">
         <field name="key">overcharge_invoice</field>
@@ -116,6 +123,7 @@ Re-autorizar precios</field>
         <field name="resolved_domain">[('invoice_status','=','invoiced')]</field>
         <field name="resolved_label">La orden quedó facturada por completo.</field>
         <field name="shared" eval="True"/>
+        <field name="group_xmlids">account.group_account_invoice</field>
     </record>
     <record id="kind_credit_note" model="som.activity.kind">
         <field name="key">credit_note</field>
@@ -130,6 +138,7 @@ Re-autorizar precios</field>
         <field name="resolved_domain">[('invoice_ids','any',[('move_type','=','out_refund'),('state','=','posted'),('create_date','>=',activity_date)])]</field>
         <field name="resolved_label">Se publicó la nota de crédito.</field>
         <field name="shared" eval="True"/>
+        <field name="group_xmlids">account.group_account_invoice</field>
     </record>
     <record id="kind_cash_formal_payment" model="som.activity.kind">
         <field name="key">cash_formal_payment</field>
@@ -143,6 +152,7 @@ Re-autorizar precios</field>
         <field name="description">Recibo de caja entregado que falta registrar como pago.</field>
         <field name="resolved_domain">[('state','in',['paid','cancelled'])]</field>
         <field name="resolved_label">El recibo ya tiene pago registrado o se canceló.</field>
+        <field name="group_xmlids">cash_receipt_voucher.group_cash_internal_control,cash_receipt_voucher.group_cash_internal_control_edit</field>
     </record>
 
     <!-- ══════════ COMISIONES ══════════ -->
@@ -159,6 +169,7 @@ Re-autorizar precios</field>
         <field name="description">Solicitud de % de comisión por encima del permitido.</field>
         <field name="resolved_domain">[('state','!=','pending')]</field>
         <field name="resolved_label">La solicitud de comisión ya se resolvió.</field>
+        <field name="group_xmlids">om_advanced_commission.group_commission_authorizer</field>
     </record>
     <record id="kind_commission_incident" model="som.activity.kind">
         <field name="key">commission_incident</field>
@@ -171,6 +182,7 @@ Re-autorizar precios</field>
         <field name="sequence">20</field>
         <field name="shared" eval="True"/>
         <field name="description">Cobro que no pudo ligarse a una comisión; lo atiende un responsable de comisiones.</field>
+        <field name="group_xmlids">om_advanced_commission.group_commission_manager</field>
     </record>
     <record id="kind_commission_error" model="som.activity.kind">
         <field name="key">commission_error</field>
@@ -184,6 +196,7 @@ Re-autorizar precios</field>
         <field name="description">Error al calcular la comisión de una factura u orden.</field>
         <field name="resolved_domain">[('commission_move_ids','!=',False)]</field>
         <field name="resolved_label">La comisión ya se generó.</field>
+        <field name="group_xmlids">om_advanced_commission.group_commission_manager</field>
     </record>
     <record id="kind_commission_reversal" model="som.activity.kind">
         <field name="key">commission_reversal</field>
@@ -198,6 +211,7 @@ Re-autorizar precios</field>
         <field name="description">Se desconcilió un cobro: la comisión se neutralizó.</field>
         <field name="notice" eval="True"/>
         <field name="notice_days">7</field>
+        <field name="group_xmlids">om_advanced_commission.group_commission_manager</field>
     </record>
     <record id="kind_commission_authorized" model="som.activity.kind">
         <field name="key">commission_authorized</field>
@@ -211,6 +225,7 @@ Re-autorizar precios</field>
         <field name="description">Aviso al solicitante: su comisión fue autorizada.</field>
         <field name="notice" eval="True"/>
         <field name="notice_days">7</field>
+        <field name="group_xmlids">sales_team.group_sale_salesman</field>
     </record>
     <record id="kind_commission_audit" model="som.activity.kind">
         <field name="key">commission_audit</field>
@@ -222,6 +237,7 @@ Re-autorizar precios</field>
         <field name="color">#6b3fd0</field>
         <field name="sequence">60</field>
         <field name="description">Auditoría nocturna: cobros que no generaron comisión.</field>
+        <field name="group_xmlids">om_advanced_commission.group_commission_manager</field>
     </record>
     <record id="kind_commission_external_migration" model="som.activity.kind">
         <field name="key">commission_external_migration</field>
@@ -235,6 +251,7 @@ Re-autorizar precios</field>
         <field name="description">Revisión puntual generada por una migración.</field>
         <field name="notice" eval="True"/>
         <field name="notice_days">7</field>
+        <field name="group_xmlids">om_advanced_commission.group_commission_manager</field>
     </record>
 
     <!-- ══════════ CAJA ══════════ -->
@@ -251,6 +268,7 @@ Re-autorizar precios</field>
         <field name="description">La caja principal entregó efectivo: Caja Chica debe confirmar que lo recibió.</field>
         <field name="resolved_domain">[('state','!=','pending')]</field>
         <field name="resolved_label">El ingreso de caja chica ya no está pendiente.</field>
+        <field name="group_xmlids">cash_receipt_voucher.group_petty_cash_user,cash_receipt_voucher.group_petty_cash_manager</field>
     </record>
 
     <!-- ══════════ INVENTARIO Y LOGÍSTICA ══════════ -->
@@ -265,6 +283,7 @@ Re-autorizar precios</field>
         <field name="description">Un embarque llegó a puerto: hay una recepción por procesar.</field>
         <field name="resolved_domain">[('state','in',['done','cancel'])]</field>
         <field name="resolved_label">La recepción ya se procesó.</field>
+        <field name="group_xmlids">stock.group_stock_user</field>
     </record>
     <record id="kind_logistics_delivery" model="som.activity.kind">
         <field name="key">logistics_delivery</field>
@@ -280,6 +299,7 @@ Pago registrado</field>
         <field name="description">Aviso a Logística: la orden ya puede entregarse.</field>
         <field name="resolved_domain">[('delivery_status','=','full')]</field>
         <field name="resolved_label">La orden ya se entregó por completo.</field>
+        <field name="group_xmlids">sale_delivery_auth.group_delivery_logistics</field>
     </record>
     <record id="kind_hold_expired" model="som.activity.kind">
         <field name="key">hold_expired</field>
@@ -293,6 +313,7 @@ Pago registrado</field>
         <field name="description">Aviso al vendedor: una reserva de placas venció y se liberó.</field>
         <field name="resolved_domain">['|',('x_expiry_seller_notified','=',False),('state','in',['done','cancel'])]</field>
         <field name="resolved_label">La reserva se renovó o se cerró.</field>
+        <field name="group_xmlids">sales_team.group_sale_salesman</field>
     </record>
 
     <!-- ══════════ AVISOS DE VENTA (un solo destinatario) ══════════ -->
@@ -309,6 +330,7 @@ Descuento rechazado</field>
         <field name="description">Aviso al vendedor: su descuento fue autorizado o rechazado.</field>
         <field name="notice" eval="True"/>
         <field name="notice_days">7</field>
+        <field name="group_xmlids">sales_team.group_sale_salesman</field>
     </record>
     <record id="kind_iva_result" model="som.activity.kind">
         <field name="key">iva_result</field>
@@ -322,6 +344,7 @@ Descuento rechazado</field>
         <field name="description">Aviso al vendedor: su solicitud de quitar IVA fue aprobada o rechazada.</field>
         <field name="notice" eval="True"/>
         <field name="notice_days">7</field>
+        <field name="group_xmlids">sales_team.group_sale_salesman</field>
     </record>
     <record id="kind_iva_removed" model="som.activity.kind">
         <field name="key">iva_removed</field>
@@ -335,6 +358,7 @@ Descuento rechazado</field>
         <field name="description">Aviso al vendedor: un autorizador quitó el IVA de su orden.</field>
         <field name="notice" eval="True"/>
         <field name="notice_days">7</field>
+        <field name="group_xmlids">sales_team.group_sale_salesman</field>
     </record>
 
     <record id="kind_price_auth_result" model="som.activity.kind">
@@ -350,6 +374,7 @@ Autorización Rechazada</field>
         <field name="notice" eval="True"/>
         <field name="notice_days">7</field>
         <field name="description">Aviso al vendedor: su solicitud de precios fue aprobada o rechazada.</field>
+        <field name="group_xmlids">sales_team.group_sale_salesman</field>
     </record>
     <record id="kind_delivery_auth_result" model="som.activity.kind">
         <field name="key">delivery_auth_result</field>
@@ -363,6 +388,7 @@ Autorización Rechazada</field>
         <field name="notice" eval="True"/>
         <field name="notice_days">7</field>
         <field name="description">Aviso al solicitante y al vendedor: la entrega fue autorizada o rechazada.</field>
+        <field name="group_xmlids">sales_team.group_sale_salesman</field>
     </record>
 
     <!-- ══════════ SISTEMA ══════════ -->
@@ -379,6 +405,20 @@ Autorización Rechazada</field>
         <field name="description">El detector anti-baneo pausó una cuenta de WhatsApp.</field>
         <field name="resolved_domain">[('paused','=',False)]</field>
         <field name="resolved_label">La cuenta se reanudó.</field>
+        <field name="group_xmlids">som_whatsapp.group_whatsapp_manager</field>
+    </record>
+
+    <!-- ══════════ MANUALES: todo lo agendado a mano (sin prefijo, sin modelo) ══════════ -->
+    <record id="kind_native" model="som.activity.kind">
+        <field name="key">native</field>
+        <field name="name">Actividades manuales</field>
+        <field name="res_model" eval="False"/>
+        <field name="summary_prefixes" eval="False"/>
+        <field name="category">manual</field>
+        <field name="icon">fa-clock-o</field>
+        <field name="color">#5a6b7d</field>
+        <field name="sequence">10</field>
+        <field name="description">Actividades que alguien agenda a mano en un documento (llamada, correo, pendiente…).</field>
     </record>
 
 </odoo>

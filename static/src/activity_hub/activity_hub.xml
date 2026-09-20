@@ -235,8 +235,8 @@
                                 el documento y los demás asignados no cambian.
                             </p>
                             <p class="som-hub-muted mb-0">
-                                Las actividades nativas de Odoo (las que alguien agenda a mano) siguen llegando al reloj de la barra superior.
-                                Recibiendo <b t-esc="enabledKindsCount"/> de <t t-esc="data.kinds.length"/> tipos.
+                                Todas las actividades, incluidas las que alguien agenda a mano, llegan solo aquí. Los tipos con candado
+                                requieren un permiso que no tienes. Recibiendo <b t-esc="enabledKindsCount"/> de <t t-esc="data.kinds.length"/> tipos.
                             </p>
                         </div>
                         <div class="som-hub-config-actions">
@@ -250,8 +250,9 @@
                             <div class="som-hub-group-head"><span class="som-hub-group-name" t-esc="cat.label"/></div>
                             <div class="som-hub-prefs">
                                 <t t-foreach="cat.kinds" t-as="k" t-key="k.id">
-                                    <label class="som-hub-pref" t-att-class="{ 'som-hub-pref-off': !k.enabled }"
-                                           t-att-style="'--kind-color:' + k.color">
+                                    <label class="som-hub-pref" t-att-class="{ 'som-hub-pref-off': !k.enabled, 'som-hub-pref-locked': !k.available }"
+                                           t-att-style="'--kind-color:' + k.color"
+                                           t-att-title="k.available ? '' : 'No tienes permiso para recibir este tipo'">
                                         <span class="som-hub-kind-icon"><i t-att-class="'fa ' + k.icon" title=""/></span>
                                         <span class="som-hub-pref-text">
                                             <span class="som-hub-pref-name">
@@ -262,12 +263,13 @@
                                             </span>
                                             <span class="som-hub-pref-desc" t-esc="k.description"/>
                                             <span class="som-hub-pref-stats">
+                                                <t t-if="!k.available"><i class="fa fa-lock" title=""/> sin permiso · </t>
                                                 <t t-if="k.pending_count"><b t-esc="k.pending_count"/> pendiente<t t-if="k.pending_count !== 1">s</t> · </t>
                                                 <t t-if="k.ever_count">te ha llegado <t t-esc="k.ever_count"/> vez<t t-if="k.ever_count !== 1">es</t></t>
                                                 <t t-else="">nunca te ha llegado</t>
                                             </span>
                                         </span>
-                                        <span class="som-hub-switch" t-att-class="{ on: k.enabled }" t-on-click.prevent="() => this.togglePref(k)">
+                                        <span class="som-hub-switch" t-att-class="{ on: k.enabled, disabled: !k.available }" t-on-click.prevent="() => k.available and this.togglePref(k)">
                                             <span class="som-hub-switch-knob"/>
                                         </span>
                                     </label>

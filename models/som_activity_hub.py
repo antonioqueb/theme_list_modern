@@ -55,7 +55,9 @@ CATEGORIES = [
     ('inventario', 'Inventario y logística'),
     ('avisos', 'Avisos de venta'),
     ('sistema', 'Sistema'),
+    ('manual', 'Actividades manuales'),
 ]
+NATIVE_KEY = 'native'
 
 
 class SomActivityKind(models.Model):
@@ -70,7 +72,7 @@ class SomActivityKind(models.Model):
         help="Modelo técnico del documento (sale.order, petty.cash.entry…). "
              "Vacío = cualquier modelo: se reconoce solo por el prefijo.")
     summary_prefixes = fields.Text(
-        'Prefijos del resumen', required=True,
+        'Prefijos del resumen',
         help="Uno por línea. La actividad se reconoce si su resumen EMPIEZA "
              "por alguno (sin distinguir mayúsculas).")
     category = fields.Selection(CATEGORIES, 'Categoría', required=True, default='avisos')
@@ -82,6 +84,11 @@ class SomActivityKind(models.Model):
         help="El flujo crea una actividad por autorizador. Cuando uno la "
              "atiende, las de los demás se cierran solas.")
     description = fields.Char('Descripción', help="Texto corto que ve el usuario al configurar.")
+    group_xmlids = fields.Char(
+        'Grupos con permiso',
+        help="XML-IDs de res.groups separados por coma (p.ej. "
+             "inventory_shopping_cart.group_price_authorizer). Solo quien pertenezca a "
+             "alguno puede activar este tipo. Vacío = basta con poder leer el modelo.")
     notice = fields.Boolean(
         'Aviso informativo', default=False,
         help="No hay nada que hacer: el Centro lo muestra con botón «Enterado» y "
@@ -187,14 +194,42 @@ class SomActivityKind(models.Model):
         self.ensure_one()
         return [p.strip().lower() for p in (self.summary_prefixes or '').splitlines() if p.strip()]
 
+    def _som_available_for(self, user):
+        """¿Puede este usuario recibir/activar el tipo? Grupos listados → debe
+        pertenecer a alguno (los xmlid de módulos no instalados se ignoran; si
+        ninguno existe, no está disponible). Sin grupos → basta leer el modelo."""
+        self.ensure_one()
+        env_user = self.env(user=user.id)
+        xmlids = [x.strip() for x in (self.group_xmlids or '').split(',') if x.strip()]
+        if xmlids:
+            found = False
+            for xmlid in xmlids:
+                if env_user.ref(xmlid, raise_if_not_found=False):
+                    found = True
+                    if env_user.user.has_group(xmlid):
+                        return True
+            return False
+        if self.res_model and self.res_model in self.env:
+            try:
+                return env_user[self.res_model].has_access('read')
+            except Exception:  # noqa: BLE001
+                return False
+        return True
+
+    @api.model
+    def _som_native_kind(self):
+        return self.sudo().search([('key', '=', NATIVE_KEY)], limit=1)
+
     @api.model
     def _som_classify(self, res_model, summary):
         """Devuelve el tipo SOM que reconoce (modelo, resumen) o un recordset vacío.
-        Gana el prefijo más largo; a igualdad, el tipo con modelo explícito."""
+        Gana el prefijo más largo; a igualdad, el tipo con modelo explícito.
+        Las actividades manuales NO se clasifican: viven en el Centro como
+        «Actividades manuales» pero siguen visibles en su documento."""
         summary = (summary or '').strip().lower()
         if not summary:
             return self.browse()
-        domain = [('res_model', '=', False)]
+        domain = [('res_model', '=', False), ('summary_prefixes', '!=', False)]
         if res_model:
             domain = ['|', ('res_model', '=', res_model)] + domain
         best, best_len = self.browse(), -1
@@ -293,12 +328,9 @@ class MailActivity(models.Model):
         return super()._search(domain, offset, limit, order, bypass_access=bypass_access, **kwargs)
 
     def action_notify(self):
-        # Sin duplicados: asignar una actividad SOM NO manda el aviso nativo
-        # "te asignaron una actividad" (correo + bandeja de mensajes). Esas
-        # actividades viven únicamente en el Centro de Actividades.
-        native = self.filtered(lambda a: not a.x_som_kind_id)
-        if native:
-            return super(MailActivity, native).action_notify()
+        # Sin duplicados: asignar una actividad (SOM o manual) NO manda el
+        # aviso nativo "te asignaron una actividad" (correo + bandeja de
+        # mensajes). Todas viven únicamente en el Centro de Actividades.
         return None
 
     def _som_sibling_activities(self):
@@ -454,6 +486,12 @@ class SomActivityHub(models.AbstractModel):
     # ------------------------------------------------------------------
     @api.model
     def _kind_payload(self, kind):
+        if not kind:
+            kind = self.env['som.activity.kind']._som_native_kind()
+        if not kind:
+            return {'id': 0, 'key': NATIVE_KEY, 'name': _('Actividades manuales'), 'category': 'manual',
+                    'category_label': dict(CATEGORIES)['manual'], 'icon': 'fa-clock-o', 'color': '#5a6b7d',
+                    'shared': False, 'notice': False, 'notice_days': 7, 'auto': False, 'description': ''}
         return {
             'id': kind.id,
             'key': kind.key,
@@ -508,7 +546,7 @@ class SomActivityHub(models.AbstractModel):
         deadline = act.date_deadline
         payload = {
             'id': act.id,
-            'kind': self._kind_payload(kind) if kind else None,
+            'kind': self._kind_payload(kind),
             'summary': act.summary or '',
             'note': self._note_text(act.note),
             'res_model': act.res_model or '',
@@ -550,19 +588,30 @@ class SomActivityHub(models.AbstractModel):
         user = self.env.user
         Activity = self.env['mail.activity']
         Kind = self.env['som.activity.kind'].sudo()
+        native = Kind._som_native_kind()
+        native_id = native.id or 0
         disabled = set(self.env['som.activity.pref']._som_disabled_kind_ids(user))
+        all_kinds = Kind.search([])
+        available = {k.id: k._som_available_for(user) for k in all_kinds}
 
-        base = [('user_id', '=', user.id), ('x_som_kind_id', '!=', False)]
+        def kind_id_of(act):
+            return act.x_som_kind_id.id or native_id
+
+        def visible(act):
+            kid = kind_id_of(act)
+            return kid not in disabled and available.get(kid, True)
+
+        # TODAS las actividades del usuario: las SOM y las manuales.
+        base = [('user_id', '=', user.id)]
         pending_all = Activity.search(base + [('active', '=', True)], order='date_deadline asc, id desc')
-        pending = pending_all.filtered(lambda a: a.x_som_kind_id.id not in disabled)
+        pending = pending_all.filtered(visible)
 
         history = Activity.with_context(active_test=False).search(
             base + [('active', '=', False)], order='date_done desc, id desc', limit=self.HISTORY_LIMIT)
-        history = history.filtered(lambda a: a.x_som_kind_id.id not in disabled)
+        history = history.filtered(visible)
 
         # Lo que YO pedí y otros deben atender (o ya atendieron).
-        mine_domain = [('create_uid', '=', user.id), ('user_id', '!=', user.id),
-                       ('x_som_kind_id', '!=', False)]
+        mine_domain = [('create_uid', '=', user.id), ('user_id', '!=', user.id)]
         requested_open = Activity.sudo().search(mine_domain + [('active', '=', True)],
                                                 order='id desc', limit=self.HISTORY_LIMIT)
         requested_closed = Activity.sudo().with_context(active_test=False).search(
@@ -572,18 +621,18 @@ class SomActivityHub(models.AbstractModel):
         # Catálogo para configurar: todos los tipos, con cuántas tiene el usuario.
         counts = {}
         for act in pending_all:
-            counts[act.x_som_kind_id.id] = counts.get(act.x_som_kind_id.id, 0) + 1
+            counts[kind_id_of(act)] = counts.get(kind_id_of(act), 0) + 1
         ever = {
-            kind.id: count
+            (kind.id or native_id): count
             for kind, count in Activity.sudo().with_context(active_test=False)._read_group(
-                [('user_id', '=', user.id), ('x_som_kind_id', '!=', False)],
-                ['x_som_kind_id'], ['__count'])
+                [('user_id', '=', user.id)], ['x_som_kind_id'], ['__count'])
         }
         kinds = []
-        for kind in Kind.search([]):
+        for kind in all_kinds:
             kp = self._kind_payload(kind)
             kp.update({
-                'enabled': kind.id not in disabled,
+                'enabled': kind.id not in disabled and available.get(kind.id, True),
+                'available': available.get(kind.id, True),
                 'pending_count': counts.get(kind.id, 0),
                 'ever_count': ever.get(kind.id, 0),
             })
@@ -594,6 +643,7 @@ class SomActivityHub(models.AbstractModel):
             'today': fields.Date.context_today(self).isoformat(),
             'pending': [self._activity_payload(a) for a in pending],
             'hidden_pending': len(pending_all) - len(pending),
+            'native_kind_id': native_id,
             'history': [self._activity_payload(a, with_siblings=False) for a in history],
             'requests': requests,
             'kinds': kinds,
@@ -607,7 +657,7 @@ class SomActivityHub(models.AbstractModel):
         groups = {}
 
         def key_of(a):
-            return (a.res_model, a.res_id, a.x_som_kind_id.id)
+            return (a.res_model, a.res_id, a.x_som_kind_id.id or 0)
 
         for act in open_acts:
             g = groups.setdefault(key_of(act), self._request_seed(act))
@@ -634,7 +684,7 @@ class SomActivityHub(models.AbstractModel):
     def _request_seed(self, act):
         p = self._activity_payload(act, with_siblings=False)
         return {
-            'key': '%s,%s,%s' % (act.res_model, act.res_id, act.x_som_kind_id.id),
+            'key': '%s,%s,%s' % (act.res_model, act.res_id, act.x_som_kind_id.id or 0),
             'kind': p['kind'],
             'summary': p['summary'],
             'res_model': p['res_model'],
@@ -667,6 +717,8 @@ class SomActivityHub(models.AbstractModel):
         kind = self.env['som.activity.kind'].browse(int(kind_id)).exists()
         if not kind:
             raise UserError(_('El tipo de actividad ya no existe.'))
+        if enabled and not kind._som_available_for(self.env.user):
+            raise UserError(_('No tienes permiso para recibir «%s».') % kind.name)
         Pref = self.env['som.activity.pref'].sudo()
         pref = Pref.search([('user_id', '=', self.env.uid), ('kind_id', '=', kind.id)], limit=1)
         if pref:
@@ -680,9 +732,10 @@ class SomActivityHub(models.AbstractModel):
         Pref = self.env['som.activity.pref'].sudo()
         existing = {p.kind_id.id: p for p in Pref.search([('user_id', '=', self.env.uid)])}
         for kind in self.env['som.activity.kind'].sudo().search([]):
+            value = bool(enabled) and kind._som_available_for(self.env.user)
             pref = existing.get(kind.id)
             if pref:
-                pref.enabled = bool(enabled)
+                pref.enabled = value
             else:
-                Pref.create({'user_id': self.env.uid, 'kind_id': kind.id, 'enabled': bool(enabled)})
+                Pref.create({'user_id': self.env.uid, 'kind_id': kind.id, 'enabled': value})
         return True
