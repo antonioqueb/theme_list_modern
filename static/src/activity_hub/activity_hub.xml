@@ -3,6 +3,7 @@
 
     <t t-name="theme_list_modern.SomActivityHub">
         <div class="som-hub o_action">
+          <div class="som-hub-scroll">
 
             <!-- ═══════ Cabecera ═══════ -->
             <div class="som-hub-header">
@@ -266,6 +267,7 @@
                 </div>
 
             </t>
+          </div>
         </div>
     </t>
 

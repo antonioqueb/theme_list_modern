@@ -14,18 +14,30 @@
     --som-ok: #0b8a5c;
     --kind-color: var(--som-blue);
 
-    // El contenedor de acciones de Odoo es flex sin scroll propio: el
-    // client action debe ocupar el alto y desplazarse él mismo.
+    // Patrón de Odoo (.o_content): la raíz del client action es una columna
+    // flex sin scroll y de alto acotado; el scroll vive en un hijo con
+    // min-height: 0 + overflow-y: auto. Poner overflow en la raíz no sirve
+    // porque el action manager la deja crecer sin límite.
+    display: flex;
+    flex-direction: column;
     flex: 1 1 auto;
     height: 100%;
+    max-height: 100%;
     min-height: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
+    overflow: hidden;
     background: var(--som-bg);
     color: var(--som-ink);
-    padding: 20px 24px 48px;
     font-size: 14px;
+
+    &-scroll {
+        flex: 1 1 auto;
+        min-height: 0;
+        height: 100%;
+        overflow-y: auto;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+        padding: 20px 24px 48px;
+    }
 
     h1 {
         font-size: 22px;
@@ -402,7 +414,7 @@
 
     // ─── Móvil ───
     @media (max-width: 640px) {
-        padding: 14px 12px 40px;
+        &-scroll { padding: 14px 12px 40px; }
         &-cards, &-prefs { grid-template-columns: 1fr; }
         &-row { grid-template-columns: 1fr; gap: 4px; }
         &-card-actions { justify-content: stretch; .btn { flex: 1; } }
