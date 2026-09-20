@@ -46,6 +46,8 @@ Re-autorizar precios</field>
         <field name="sequence">30</field>
         <field name="shared" eval="True"/>
         <field name="description">Solicitud de exención de IVA en una orden de venta.</field>
+        <field name="resolved_domain">[('x_iva_exempt_state','!=','requested')]</field>
+        <field name="resolved_label">La solicitud de exención ya se resolvió.</field>
     </record>
     <record id="kind_delivery_auth" model="som.activity.kind">
         <field name="key">delivery_auth</field>
@@ -70,6 +72,8 @@ Re-autorizar precios</field>
         <field name="sequence">50</field>
         <field name="shared" eval="True"/>
         <field name="description">Alerta a los autorizadores: una línea quedó por debajo del piso autorizado.</field>
+        <field name="notice" eval="True"/>
+        <field name="notice_days">7</field>
     </record>
 
     <!-- ══════════ COBRANZA Y PAGOS ══════════ -->
@@ -83,6 +87,8 @@ Re-autorizar precios</field>
         <field name="color">#0b8a5c</field>
         <field name="sequence">10</field>
         <field name="description">Comprobante o cobro recibido que debe aplicarse a la orden.</field>
+        <field name="resolved_domain">[('delivery_is_fully_paid','=',True)]</field>
+        <field name="resolved_label">La orden quedó pagada.</field>
     </record>
     <record id="kind_overcharge_collect" model="som.activity.kind">
         <field name="key">overcharge_collect</field>
@@ -94,6 +100,8 @@ Re-autorizar precios</field>
         <field name="color">#0b8a5c</field>
         <field name="sequence">20</field>
         <field name="description">La asignación real superó lo pagado: hay excedente por cobrar.</field>
+        <field name="resolved_domain">[('delivery_is_fully_paid','=',True)]</field>
+        <field name="resolved_label">La orden quedó pagada.</field>
     </record>
     <record id="kind_overcharge_invoice" model="som.activity.kind">
         <field name="key">overcharge_invoice</field>
@@ -105,6 +113,8 @@ Re-autorizar precios</field>
         <field name="color">#0b8a5c</field>
         <field name="sequence">30</field>
         <field name="description">Excedente que debe facturarse.</field>
+        <field name="resolved_domain">[('invoice_status','=','invoiced')]</field>
+        <field name="resolved_label">La orden quedó facturada por completo.</field>
     </record>
     <record id="kind_credit_note" model="som.activity.kind">
         <field name="key">credit_note</field>
@@ -116,6 +126,8 @@ Re-autorizar precios</field>
         <field name="color">#0b8a5c</field>
         <field name="sequence">40</field>
         <field name="description">Se asignó menos de lo facturado: hace falta nota de crédito.</field>
+        <field name="resolved_domain">[('invoice_ids','any',[('move_type','=','out_refund'),('state','=','posted'),('create_date','>=',activity_date)])]</field>
+        <field name="resolved_label">Se publicó la nota de crédito.</field>
     </record>
     <record id="kind_cash_formal_payment" model="som.activity.kind">
         <field name="key">cash_formal_payment</field>
@@ -127,6 +139,8 @@ Re-autorizar precios</field>
         <field name="color">#0b8a5c</field>
         <field name="sequence">50</field>
         <field name="description">Recibo de caja entregado que falta registrar como pago.</field>
+        <field name="resolved_domain">[('state','in',['paid','cancelled'])]</field>
+        <field name="resolved_label">El recibo ya tiene pago registrado o se canceló.</field>
     </record>
 
     <!-- ══════════ COMISIONES ══════════ -->
@@ -141,6 +155,8 @@ Re-autorizar precios</field>
         <field name="sequence">10</field>
         <field name="shared" eval="True"/>
         <field name="description">Solicitud de % de comisión por encima del permitido.</field>
+        <field name="resolved_domain">[('state','!=','pending')]</field>
+        <field name="resolved_label">La solicitud de comisión ya se resolvió.</field>
     </record>
     <record id="kind_commission_incident" model="som.activity.kind">
         <field name="key">commission_incident</field>
@@ -164,6 +180,8 @@ Re-autorizar precios</field>
         <field name="sequence">30</field>
         <field name="shared" eval="True"/>
         <field name="description">Error al calcular la comisión de una factura u orden.</field>
+        <field name="resolved_domain">[('commission_move_ids','!=',False)]</field>
+        <field name="resolved_label">La comisión ya se generó.</field>
     </record>
     <record id="kind_commission_reversal" model="som.activity.kind">
         <field name="key">commission_reversal</field>
@@ -176,6 +194,8 @@ Re-autorizar precios</field>
         <field name="sequence">40</field>
         <field name="shared" eval="True"/>
         <field name="description">Se desconcilió un cobro: la comisión se neutralizó.</field>
+        <field name="notice" eval="True"/>
+        <field name="notice_days">7</field>
     </record>
     <record id="kind_commission_authorized" model="som.activity.kind">
         <field name="key">commission_authorized</field>
@@ -187,11 +207,13 @@ Re-autorizar precios</field>
         <field name="color">#6b3fd0</field>
         <field name="sequence">50</field>
         <field name="description">Aviso al solicitante: su comisión fue autorizada.</field>
+        <field name="notice" eval="True"/>
+        <field name="notice_days">7</field>
     </record>
     <record id="kind_commission_audit" model="som.activity.kind">
         <field name="key">commission_audit</field>
         <field name="name">Cobros sin comisión</field>
-        <field name="res_model">res.partner</field>
+        <field name="res_model" eval="False"/>
         <field name="summary_prefixes">Cobros sin comisión</field>
         <field name="category">comisiones</field>
         <field name="icon">fa-search</field>
@@ -209,6 +231,8 @@ Re-autorizar precios</field>
         <field name="color">#6b3fd0</field>
         <field name="sequence">70</field>
         <field name="description">Revisión puntual generada por una migración.</field>
+        <field name="notice" eval="True"/>
+        <field name="notice_days">7</field>
     </record>
 
     <!-- ══════════ CAJA ══════════ -->
@@ -223,6 +247,8 @@ Re-autorizar precios</field>
         <field name="sequence">10</field>
         <field name="shared" eval="True"/>
         <field name="description">La caja principal entregó efectivo: Caja Chica debe confirmar que lo recibió.</field>
+        <field name="resolved_domain">[('state','!=','pending')]</field>
+        <field name="resolved_label">El ingreso de caja chica ya no está pendiente.</field>
     </record>
 
     <!-- ══════════ INVENTARIO Y LOGÍSTICA ══════════ -->
@@ -235,6 +261,8 @@ Re-autorizar precios</field>
         <field name="color">#0b7fd0</field>
         <field name="sequence">10</field>
         <field name="description">Un embarque llegó a puerto: hay una recepción por procesar.</field>
+        <field name="resolved_domain">[('state','in',['done','cancel'])]</field>
+        <field name="resolved_label">La recepción ya se procesó.</field>
     </record>
     <record id="kind_logistics_delivery" model="som.activity.kind">
         <field name="key">logistics_delivery</field>
@@ -248,6 +276,8 @@ Pago registrado</field>
         <field name="sequence">20</field>
         <field name="shared" eval="True"/>
         <field name="description">Aviso a Logística: la orden ya puede entregarse.</field>
+        <field name="resolved_domain">[('delivery_status','=','full')]</field>
+        <field name="resolved_label">La orden ya se entregó por completo.</field>
     </record>
     <record id="kind_hold_expired" model="som.activity.kind">
         <field name="key">hold_expired</field>
@@ -259,6 +289,8 @@ Pago registrado</field>
         <field name="color">#0b7fd0</field>
         <field name="sequence">30</field>
         <field name="description">Aviso al vendedor: una reserva de placas venció y se liberó.</field>
+        <field name="resolved_domain">['|',('x_expiry_seller_notified','=',False),('state','in',['done','cancel'])]</field>
+        <field name="resolved_label">La reserva se renovó o se cerró.</field>
     </record>
 
     <!-- ══════════ AVISOS DE VENTA (un solo destinatario) ══════════ -->
@@ -273,6 +305,8 @@ Descuento rechazado</field>
         <field name="color">#5a6b7d</field>
         <field name="sequence">10</field>
         <field name="description">Aviso al vendedor: su descuento fue autorizado o rechazado.</field>
+        <field name="notice" eval="True"/>
+        <field name="notice_days">7</field>
     </record>
     <record id="kind_iva_result" model="som.activity.kind">
         <field name="key">iva_result</field>
@@ -284,6 +318,8 @@ Descuento rechazado</field>
         <field name="color">#5a6b7d</field>
         <field name="sequence">20</field>
         <field name="description">Aviso al vendedor: su solicitud de quitar IVA fue aprobada o rechazada.</field>
+        <field name="notice" eval="True"/>
+        <field name="notice_days">7</field>
     </record>
     <record id="kind_iva_removed" model="som.activity.kind">
         <field name="key">iva_removed</field>
@@ -295,6 +331,8 @@ Descuento rechazado</field>
         <field name="color">#5a6b7d</field>
         <field name="sequence">30</field>
         <field name="description">Aviso al vendedor: un autorizador quitó el IVA de su orden.</field>
+        <field name="notice" eval="True"/>
+        <field name="notice_days">7</field>
     </record>
 
     <!-- ══════════ SISTEMA ══════════ -->
@@ -309,6 +347,8 @@ Descuento rechazado</field>
         <field name="sequence">10</field>
         <field name="shared" eval="True"/>
         <field name="description">El detector anti-baneo pausó una cuenta de WhatsApp.</field>
+        <field name="resolved_domain">[('paused','=',False)]</field>
+        <field name="resolved_label">La cuenta se reanudó.</field>
     </record>
 
 </odoo>

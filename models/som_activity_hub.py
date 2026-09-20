@@ -34,11 +34,13 @@ Diseño
 """
 import logging
 import re
+from datetime import timedelta
 
 from odoo import api, fields, models, _
-from odoo.exceptions import AccessError, UserError
+from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.fields import Domain
 from odoo.tools import html2plaintext
+from odoo.tools.safe_eval import safe_eval
 from odoo.addons.mail.tools.discuss import Store
 
 _logger = logging.getLogger(__name__)
@@ -80,9 +82,103 @@ class SomActivityKind(models.Model):
         help="El flujo crea una actividad por autorizador. Cuando uno la "
              "atiende, las de los demás se cierran solas.")
     description = fields.Char('Descripción', help="Texto corto que ve el usuario al configurar.")
+    notice = fields.Boolean(
+        'Aviso informativo', default=False,
+        help="No hay nada que hacer: el Centro lo muestra con botón «Enterado» y "
+             "se archiva solo pasados los días indicados.")
+    notice_days = fields.Integer('Días de vigencia del aviso', default=7)
+    resolved_domain = fields.Char(
+        'Dominio de resolución',
+        help="Dominio sobre el documento origen. Cuando el documento lo cumple, la actividad se "
+             "archiva sola (cron horario). Puede usar la variable activity_date "
+             "(fecha de creación de la actividad), p.ej. "
+             "[('invoice_ids','any',[('state','=','posted'),('create_date','>=',activity_date)])].")
+    resolved_label = fields.Char(
+        'Texto al resolver', help="Feedback que queda en la actividad archivada.")
     active = fields.Boolean(default=True)
 
     _key_unique = models.Constraint('UNIQUE(key)', 'La clave técnica del tipo debe ser única.')
+
+    @api.constrains('resolved_domain')
+    def _check_resolved_domain(self):
+        for kind in self.filtered('resolved_domain'):
+            try:
+                dom = safe_eval(kind.resolved_domain, {'activity_date': fields.Datetime.now()})
+                assert isinstance(dom, list)
+            except Exception as exc:  # noqa: BLE001
+                raise ValidationError(_('Dominio de resolución inválido en «%s»: %s') % (kind.name, exc))
+
+    # ------------------------------------------------------------------
+    # Cierre automático (cron horario)
+    # ------------------------------------------------------------------
+    @api.model
+    def _cron_auto_close(self):
+        """Archiva en silencio: avisos caducados, actividades cuyo documento ya
+        cumple el dominio de resolución y actividades cuyo documento se borró."""
+        Activity = self.env['mail.activity'].sudo()
+        now = fields.Datetime.now()
+        closed = 0
+        for kind in self.sudo().search([]):
+            acts = Activity.search([('x_som_kind_id', '=', kind.id), ('active', '=', True)])
+            if not acts:
+                continue
+            if kind.notice:
+                days = kind.notice_days or 7
+                limit = now - timedelta(days=days)
+                stale = acts.filtered(lambda a: a.create_date and a.create_date <= limit)
+                if stale:
+                    stale._som_close_silently(_('Aviso archivado automáticamente a los %s días.') % days)
+                    closed += len(stale)
+                    acts -= stale
+            closed += self._som_close_orphans(acts)
+            acts = acts.filtered('active')
+            if kind.resolved_domain and acts:
+                closed += self._som_close_resolved(kind, acts)
+        if closed:
+            _logger.info('[som_activity_hub] cierre automático: %s actividad(es).', closed)
+        return closed
+
+    @api.model
+    def _som_close_orphans(self, acts):
+        closed = 0
+        for res_model, model_acts in acts.filtered(lambda a: a.res_model and a.res_id).grouped('res_model').items():
+            if res_model not in self.env:
+                continue
+            existing = set(self.env[res_model].sudo().with_context(active_test=False)
+                           .browse(list(set(model_acts.mapped('res_id')))).exists().ids)
+            orphans = model_acts.filtered(lambda a: a.res_id not in existing)
+            if orphans:
+                orphans._som_close_silently(_('El documento origen ya no existe.'))
+                closed += len(orphans)
+        return closed
+
+    @api.model
+    def _som_close_resolved(self, kind, acts):
+        closed = 0
+        feedback = kind.resolved_label or _('Resuelto: el documento ya no lo requiere.')
+        per_activity = 'activity_date' in (kind.resolved_domain or '')
+        for res_model, model_acts in acts.filtered(lambda a: a.res_model and a.res_id).grouped('res_model').items():
+            if res_model not in self.env:
+                continue
+            Model = self.env[res_model].sudo().with_context(active_test=False)
+            try:
+                if per_activity:
+                    resolved = model_acts.browse()
+                    for act in model_acts:
+                        domain = safe_eval(kind.resolved_domain, {'activity_date': act.create_date})
+                        if Model.search_count([('id', '=', act.res_id)] + domain):
+                            resolved |= act
+                else:
+                    domain = safe_eval(kind.resolved_domain)
+                    ids = set(Model.search([('id', 'in', list(set(model_acts.mapped('res_id'))))] + domain).ids)
+                    resolved = model_acts.filtered(lambda a: a.res_id in ids)
+            except Exception as exc:  # noqa: BLE001 — un dominio que no aplica a este modelo no tumba el cron
+                _logger.debug('[som_activity_hub] dominio de «%s» no aplica a %s: %s', kind.name, res_model, exc)
+                continue
+            if resolved:
+                resolved._som_close_silently(feedback)
+                closed += len(resolved)
+        return closed
 
     # ------------------------------------------------------------------
     # Clasificación
@@ -367,6 +463,9 @@ class SomActivityHub(models.AbstractModel):
             'icon': kind.icon or 'fa-bell',
             'color': kind.color or '#0b57d0',
             'shared': kind.shared,
+            'notice': kind.notice,
+            'notice_days': kind.notice_days or 7,
+            'auto': bool(kind.resolved_domain),
             'description': kind.description or '',
         }
 

@@ -106,7 +106,7 @@
                                                 <span class="som-hub-summary" t-esc="a.summary"/>
                                                 <span class="som-hub-state" t-att-class="'som-hub-state-' + a.state" t-esc="stateLabel(a)"/>
                                             </div>
-                                            <button class="som-hub-record" t-on-click="() => this.openRecord(a.res_model, a.res_id)" title="Abrir el documento">
+                                            <button t-if="a.res_model and a.res_id" class="som-hub-record" t-on-click="() => this.openRecord(a.res_model, a.res_id)" title="Abrir el documento">
                                                 <i class="fa fa-external-link" title=""/>
                                                 <span class="som-hub-record-model" t-esc="a.model_label"/>
                                                 <span class="som-hub-record-name" t-esc="a.res_name"/>
@@ -119,6 +119,12 @@
                                                 <span t-if="a.co_assignees.length" class="som-hub-co">
                                                     <i class="fa fa-users" title="También asignada a"/> también: <t t-esc="a.co_assignees.join(', ')"/>
                                                 </span>
+                                                <span t-if="a.kind and a.kind.notice" class="som-hub-auto" title="Aviso informativo">
+                                                    <i class="fa fa-info-circle" title=""/> aviso · se archiva solo a los <t t-esc="a.kind.notice_days"/> días
+                                                </span>
+                                                <span t-elif="a.kind and a.kind.auto" class="som-hub-auto" title="Se cierra sola cuando el documento se resuelve">
+                                                    <i class="fa fa-magic" title=""/> se cierra sola al resolverse
+                                                </span>
                                             </div>
                                             <div t-if="state.feedbackFor === a.id" class="som-hub-feedback">
                                                 <input type="text" placeholder="Comentario (opcional)…" t-att-value="state.feedbackText" t-on-input="onFeedbackInput"/>
@@ -129,10 +135,13 @@
                                             </div>
                                         </div>
                                         <div class="som-hub-card-actions">
-                                            <button class="btn btn-primary btn-sm" t-on-click="() => this.openRecord(a.res_model, a.res_id)">
+                                            <button t-if="a.res_model and a.res_id" class="btn btn-primary btn-sm" t-on-click="() => this.openRecord(a.res_model, a.res_id)">
                                                 <i class="fa fa-folder-open-o" title=""/> Abrir
                                             </button>
-                                            <button class="btn btn-outline-primary btn-sm" t-att-disabled="state.busy[a.id]" t-on-click="() => this.toggleFeedback(a)">
+                                            <button t-if="a.kind and a.kind.notice" class="btn btn-outline-primary btn-sm" t-att-disabled="state.busy[a.id]" t-on-click="() => this.markDone(a, false)">
+                                                <i class="fa fa-check" title=""/> Enterado
+                                            </button>
+                                            <button t-else="" class="btn btn-outline-primary btn-sm" t-att-disabled="state.busy[a.id]" t-on-click="() => this.toggleFeedback(a)">
                                                 <i class="fa fa-check" title=""/> Atendida
                                             </button>
                                         </div>
@@ -165,7 +174,7 @@
                                         <span t-if="r.status === 'open'" class="som-hub-state som-hub-state-today">En espera</span>
                                         <span t-else="" class="som-hub-state som-hub-state-done">Atendida</span>
                                     </div>
-                                    <button class="som-hub-record" t-on-click="() => this.openRecord(r.res_model, r.res_id)" title="Abrir el documento">
+                                    <button t-if="r.res_model and r.res_id" class="som-hub-record" t-on-click="() => this.openRecord(r.res_model, r.res_id)" title="Abrir el documento">
                                         <i class="fa fa-external-link" title=""/>
                                         <span class="som-hub-record-name" t-esc="r.res_name"/>
                                         <span t-if="r.res_state" class="som-hub-record-state" t-esc="r.res_state"/>
@@ -200,7 +209,7 @@
                                         <i t-att-class="'fa ' + a.kind.icon" title=""/> <t t-esc="a.kind.name"/>
                                     </span>
                                     <span class="som-hub-summary" t-esc="a.summary"/>
-                                    <button class="som-hub-record som-hub-record-inline" t-on-click="() => this.openRecord(a.res_model, a.res_id)">
+                                    <button t-if="a.res_model and a.res_id" class="som-hub-record som-hub-record-inline" t-on-click="() => this.openRecord(a.res_model, a.res_id)">
                                         <i class="fa fa-external-link" title=""/> <t t-esc="a.res_name"/>
                                     </button>
                                     <div class="som-hub-meta">
@@ -248,6 +257,8 @@
                                             <span class="som-hub-pref-name">
                                                 <t t-esc="k.name"/>
                                                 <span t-if="k.shared" class="som-hub-shared" title="Cuando alguien la atiende, se cierra para todos"><i class="fa fa-users" title=""/></span>
+                                                <span t-if="k.notice" class="som-hub-shared" title="Aviso informativo: se archiva solo"><i class="fa fa-info-circle" title=""/> aviso</span>
+                                                <span t-elif="k.auto" class="som-hub-shared" title="Se cierra sola al resolverse el documento"><i class="fa fa-magic" title=""/> auto</span>
                                             </span>
                                             <span class="som-hub-pref-desc" t-esc="k.description"/>
                                             <span class="som-hub-pref-stats">

@@ -315,6 +315,7 @@
         .fa { margin-right: 3px; }
     }
     &-co { color: var(--som-blue-dark); }
+    &-auto { color: var(--som-muted); font-style: italic; }
     &-resolved { color: var(--som-ok); font-weight: 600; }
     &-kind-tag {
         display: inline-flex;

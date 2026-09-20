@@ -1,6 +1,6 @@
 {
     'name': 'Custom List Column Width',
-    'version': '19.0.29.2.0',
+    'version': '19.0.29.3.0',
     'summary': 'Branding SOM, anchos de columnas, Búsqueda Global y Centro de Actividades',
     'category': 'Technical',
     'author': 'Alphaqueb Consulting SAS',
@@ -9,6 +9,7 @@
         'security/ir.model.access.csv',
         'security/som_activity_hub_security.xml',
         'data/som_activity_kinds.xml',
+        'data/som_activity_cron.xml',
         'views/som_branding_templates.xml',
         'views/som_activity_hub_views.xml',
     ],
