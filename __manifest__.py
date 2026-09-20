@@ -1,13 +1,18 @@
 {
     'name': 'Custom List Column Width',
-    'version': '19.0.28.16.0',
-    'summary': 'Anchos inteligentes de columnas + Búsqueda Global Inteligente (barra fija del home)',
+    'version': '19.0.29.0.0',
+    'summary': 'Branding SOM, anchos de columnas, Búsqueda Global y Centro de Actividades',
     'category': 'Technical',
     'author': 'Alphaqueb Consulting SAS',
-    'depends': ['web'],
+    'depends': ['web', 'mail'],
     'data': [
+        'security/ir.model.access.csv',
+        'security/som_activity_hub_security.xml',
+        'data/som_activity_kinds.xml',
         'views/som_branding_templates.xml',
+        'views/som_activity_hub_views.xml',
     ],
+    'post_init_hook': 'post_init_hook',
     'assets': {
         'web._assets_primary_variables': [
             ('prepend', 'theme_list_modern/static/src/scss/som_colors_variables.scss'),
@@ -25,6 +30,10 @@
             'theme_list_modern/static/src/scss/home_menu_mobile.scss',
             'theme_list_modern/static/src/global_search/global_search.xml',
             'theme_list_modern/static/src/global_search/global_search.js',
+            'theme_list_modern/static/src/activity_hub/activity_hub.scss',
+            'theme_list_modern/static/src/activity_hub/activity_hub.xml',
+            'theme_list_modern/static/src/activity_hub/activity_hub.js',
+            'theme_list_modern/static/src/activity_hub/activity_systray_sync.js',
         ],
     },
     'installable': True,

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b57d0"/>
+      <stop offset="1" stop-color="#083b8f"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="120" height="120" rx="28" fill="url(#g)"/>
+  <!-- campana -->
+  <path d="M64 24c-3.3 0-6 2.7-6 6v2.4C46.4 35.2 38 45.6 38 58v16l-8 10v4h68v-4l-8-10V58c0-12.4-8.4-22.8-20-25.6V30c0-3.3-2.7-6-6-6z" fill="#fff"/>
+  <path d="M54 94a10 10 0 0 0 20 0z" fill="#fff"/>
+  <!-- palomita -->
+  <circle cx="92" cy="40" r="17" fill="#25d366" stroke="#fff" stroke-width="4"/>
+  <path d="M83 40.5l6 6 12-12" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

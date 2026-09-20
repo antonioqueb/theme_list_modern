@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="rule_som_activity_pref_own" model="ir.rule">
+        <field name="name">Preferencias de actividades: solo las propias</field>
+        <field name="model_id" ref="model_som_activity_pref"/>
+        <field name="domain_force">[('user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+    <record id="rule_som_activity_pref_admin" model="ir.rule">
+        <field name="name">Preferencias de actividades: administrador ve todo</field>
+        <field name="model_id" ref="model_som_activity_pref"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+</odoo>

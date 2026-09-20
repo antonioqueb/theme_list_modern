@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="theme_list_modern.SomActivityHub">
+        <div class="som-hub o_action">
+
+            <!-- ═══════ Cabecera ═══════ -->
+            <div class="som-hub-header">
+                <div class="som-hub-title">
+                    <div class="som-hub-logo"><i class="fa fa-bell" title="Actividades"/></div>
+                    <div>
+                        <h1>Centro de Actividades</h1>
+                        <div class="som-hub-subtitle" t-if="state.data">
+                            <t t-esc="data.user.name"/>
+                            · <b t-esc="pendingCount"/> pendiente<t t-if="pendingCount !== 1">s</t>
+                            <span t-if="overdueCount" class="som-hub-pill som-hub-pill-danger">
+                                <i class="fa fa-exclamation-circle" title="Vencidas"/> <t t-esc="overdueCount"/> vencida<t t-if="overdueCount !== 1">s</t>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="som-hub-tools">
+                    <div class="som-hub-search">
+                        <i class="fa fa-search" title="Buscar"/>
+                        <input type="text" placeholder="Buscar folio, cliente, texto…"
+                               t-att-value="state.search" t-on-input="onSearch"/>
+                    </div>
+                    <button class="som-hub-iconbtn" t-on-click="() => this.load()" title="Actualizar">
+                        <i class="fa fa-refresh" t-att-class="{ 'fa-spin': state.loading }" title="Actualizar"/>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ═══════ Pestañas ═══════ -->
+            <div class="som-hub-tabs">
+                <button class="som-hub-tab" t-att-class="{ active: state.tab === 'pending' }" t-on-click="() => this.setTab('pending')">
+                    <i class="fa fa-inbox" title="Pendientes"/> Pendientes
+                    <span class="som-hub-count" t-esc="pendingCount"/>
+                </button>
+                <button class="som-hub-tab" t-att-class="{ active: state.tab === 'requests' }" t-on-click="() => this.setTab('requests')">
+                    <i class="fa fa-paper-plane-o" title="Mis solicitudes"/> Mis solicitudes
+                    <span class="som-hub-count" t-if="openRequestsCount" t-esc="openRequestsCount"/>
+                </button>
+                <button class="som-hub-tab" t-att-class="{ active: state.tab === 'history' }" t-on-click="() => this.setTab('history')">
+                    <i class="fa fa-history" title="Historial"/> Historial
+                </button>
+                <button class="som-hub-tab" t-att-class="{ active: state.tab === 'config' }" t-on-click="() => this.setTab('config')">
+                    <i class="fa fa-sliders" title="Configuración"/> Configuración
+                </button>
+            </div>
+
+            <!-- ═══════ Estados de carga ═══════ -->
+            <div t-if="state.loading and !state.data" class="som-hub-empty">
+                <i class="fa fa-circle-o-notch fa-spin" title="Cargando"/> Cargando tus actividades…
+            </div>
+            <div t-elif="state.failed and !state.data" class="som-hub-empty som-hub-error">
+                <i class="fa fa-exclamation-triangle" title="Error"/> No se pudo cargar el centro de actividades.
+                <button class="btn btn-primary btn-sm ms-2" t-on-click="() => this.load()">Reintentar</button>
+            </div>
+
+            <t t-elif="state.data">
+
+                <!-- ═══════ PENDIENTES ═══════ -->
+                <div t-if="state.tab === 'pending'" class="som-hub-body">
+                    <div class="som-hub-chips" t-if="categoriesWithCounts.length > 1">
+                        <button class="som-hub-chip" t-att-class="{ active: state.category === 'all' }" t-on-click="() => this.setCategory('all')">
+                            Todas <span t-esc="pendingCount"/>
+                        </button>
+                        <t t-foreach="categoriesWithCounts" t-as="cat" t-key="cat.key">
+                            <button class="som-hub-chip" t-att-class="{ active: state.category === cat.key }" t-on-click="() => this.setCategory(cat.key)">
+                                <t t-esc="cat.label"/> <span t-esc="cat.count"/>
+                            </button>
+                        </t>
+                    </div>
+
+                    <div t-if="!filteredPending.length" class="som-hub-empty som-hub-empty-ok">
+                        <div class="som-hub-empty-icon"><i class="fa fa-check" title="Al día"/></div>
+                        <t t-if="pendingCount">Nada coincide con el filtro.</t>
+                        <t t-else="">Estás al día: no tienes actividades pendientes.</t>
+                        <div t-if="data.hidden_pending" class="som-hub-muted mt-2">
+                            <t t-esc="data.hidden_pending"/> oculta<t t-if="data.hidden_pending !== 1">s</t> por tu configuración.
+                        </div>
+                    </div>
+
+                    <t t-foreach="pendingGroups" t-as="group" t-key="group.kind ? group.kind.id : 0">
+                        <div class="som-hub-group">
+                            <div class="som-hub-group-head">
+                                <span class="som-hub-kind-icon" t-att-style="'background:' + (group.kind ? group.kind.color : '#0b57d0')">
+                                    <i t-att-class="'fa ' + (group.kind ? group.kind.icon : 'fa-bell')" title=""/>
+                                </span>
+                                <span class="som-hub-group-name" t-esc="group.kind ? group.kind.name : 'Otras'"/>
+                                <span class="som-hub-group-cat" t-esc="group.kind ? group.kind.category_label : ''"/>
+                                <span class="som-hub-count" t-esc="group.items.length"/>
+                                <span t-if="group.kind and group.kind.shared" class="som-hub-shared" title="Cuando alguien la atiende, se cierra para todos">
+                                    <i class="fa fa-users" title=""/> compartida
+                                </span>
+                            </div>
+
+                            <div class="som-hub-cards">
+                                <t t-foreach="group.items" t-as="a" t-key="a.id">
+                                    <div class="som-hub-card" t-att-class="{ 'som-hub-card-overdue': a.state === 'overdue' }"
+                                         t-att-style="'--kind-color:' + (a.kind ? a.kind.color : '#0b57d0')">
+                                        <div class="som-hub-card-main">
+                                            <div class="som-hub-card-top">
+                                                <span class="som-hub-summary" t-esc="a.summary"/>
+                                                <span class="som-hub-state" t-att-class="'som-hub-state-' + a.state" t-esc="stateLabel(a)"/>
+                                            </div>
+                                            <button class="som-hub-record" t-on-click="() => this.openRecord(a.res_model, a.res_id)" title="Abrir el documento">
+                                                <i class="fa fa-external-link" title=""/>
+                                                <span class="som-hub-record-model" t-esc="a.model_label"/>
+                                                <span class="som-hub-record-name" t-esc="a.res_name"/>
+                                                <span t-if="a.res_state" class="som-hub-record-state" t-esc="a.res_state"/>
+                                            </button>
+                                            <div t-if="a.note" class="som-hub-note" t-esc="a.note"/>
+                                            <div class="som-hub-meta">
+                                                <span><i class="fa fa-user-o" title="Solicitó"/> <t t-esc="a.requester"/></span>
+                                                <span><i class="fa fa-clock-o" title="Creada"/> <t t-esc="fmtDate(a.created_at)"/> · <t t-esc="daysLabel(a.days_open)"/></span>
+                                                <span t-if="a.co_assignees.length" class="som-hub-co">
+                                                    <i class="fa fa-users" title="También asignada a"/> también: <t t-esc="a.co_assignees.join(', ')"/>
+                                                </span>
+                                            </div>
+                                            <div t-if="state.feedbackFor === a.id" class="som-hub-feedback">
+                                                <input type="text" placeholder="Comentario (opcional)…" t-att-value="state.feedbackText" t-on-input="onFeedbackInput"/>
+                                                <button class="btn btn-primary btn-sm" t-att-disabled="state.busy[a.id]" t-on-click="() => this.markDone(a, true)">
+                                                    <i class="fa fa-check" title=""/> Confirmar
+                                                </button>
+                                                <button class="btn btn-link btn-sm" t-on-click="() => this.toggleFeedback(a)">Cancelar</button>
+                                            </div>
+                                        </div>
+                                        <div class="som-hub-card-actions">
+                                            <button class="btn btn-primary btn-sm" t-on-click="() => this.openRecord(a.res_model, a.res_id)">
+                                                <i class="fa fa-folder-open-o" title=""/> Abrir
+                                            </button>
+                                            <button class="btn btn-outline-primary btn-sm" t-att-disabled="state.busy[a.id]" t-on-click="() => this.toggleFeedback(a)">
+                                                <i class="fa fa-check" title=""/> Atendida
+                                            </button>
+                                        </div>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+
+                <!-- ═══════ MIS SOLICITUDES ═══════ -->
+                <div t-if="state.tab === 'requests'" class="som-hub-body">
+                    <p class="som-hub-intro">
+                        Actividades que nacieron de <b>tus</b> acciones y están (o estuvieron) en manos de otros:
+                        quién las tiene, quién las atendió y cuándo.
+                    </p>
+                    <div t-if="!filteredRequests.length" class="som-hub-empty">
+                        No has generado solicitudes recientes.
+                    </div>
+                    <div class="som-hub-cards">
+                        <t t-foreach="filteredRequests" t-as="r" t-key="r.key">
+                            <div class="som-hub-card som-hub-card-request" t-att-class="{ 'som-hub-card-closed': r.status !== 'open' }"
+                                 t-att-style="'--kind-color:' + (r.kind ? r.kind.color : '#0b57d0')">
+                                <div class="som-hub-card-main">
+                                    <div class="som-hub-card-top">
+                                        <span class="som-hub-kind-tag" t-if="r.kind">
+                                            <i t-att-class="'fa ' + r.kind.icon" title=""/> <t t-esc="r.kind.name"/>
+                                        </span>
+                                        <span class="som-hub-summary" t-esc="r.summary"/>
+                                        <span t-if="r.status === 'open'" class="som-hub-state som-hub-state-today">En espera</span>
+                                        <span t-else="" class="som-hub-state som-hub-state-done">Atendida</span>
+                                    </div>
+                                    <button class="som-hub-record" t-on-click="() => this.openRecord(r.res_model, r.res_id)" title="Abrir el documento">
+                                        <i class="fa fa-external-link" title=""/>
+                                        <span class="som-hub-record-name" t-esc="r.res_name"/>
+                                        <span t-if="r.res_state" class="som-hub-record-state" t-esc="r.res_state"/>
+                                    </button>
+                                    <div class="som-hub-meta">
+                                        <span><i class="fa fa-clock-o" title="Creada"/> <t t-esc="fmtDate(r.created_at)"/> · <t t-esc="daysLabel(r.days_open)"/></span>
+                                        <span t-if="r.status === 'open'" class="som-hub-co">
+                                            <i class="fa fa-hourglass-half" title="Esperando a"/> esperando a: <t t-esc="r.waiting_on.join(', ')"/>
+                                        </span>
+                                        <span t-else="" class="som-hub-resolved">
+                                            <i class="fa fa-check-circle" title="Atendida por"/> <t t-esc="r.resolved_by"/>
+                                            <t t-if="r.resolved_at"> · <t t-esc="fmtDate(r.resolved_at)"/></t>
+                                        </span>
+                                    </div>
+                                    <div t-if="r.feedback" class="som-hub-note som-hub-quote" t-esc="r.feedback"/>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+
+                <!-- ═══════ HISTORIAL ═══════ -->
+                <div t-if="state.tab === 'history'" class="som-hub-body">
+                    <p class="som-hub-intro">Actividades que ya atendiste o que se cerraron porque otro asignado las resolvió.</p>
+                    <div t-if="!filteredHistory.length" class="som-hub-empty">Sin historial todavía.</div>
+                    <div class="som-hub-list">
+                        <t t-foreach="filteredHistory" t-as="a" t-key="a.id">
+                            <div class="som-hub-row" t-att-style="'--kind-color:' + (a.kind ? a.kind.color : '#0b57d0')">
+                                <div class="som-hub-row-when" t-esc="fmtDate(a.done_at)"/>
+                                <div class="som-hub-row-what">
+                                    <span class="som-hub-kind-tag" t-if="a.kind">
+                                        <i t-att-class="'fa ' + a.kind.icon" title=""/> <t t-esc="a.kind.name"/>
+                                    </span>
+                                    <span class="som-hub-summary" t-esc="a.summary"/>
+                                    <button class="som-hub-record som-hub-record-inline" t-on-click="() => this.openRecord(a.res_model, a.res_id)">
+                                        <i class="fa fa-external-link" title=""/> <t t-esc="a.res_name"/>
+                                    </button>
+                                    <div class="som-hub-meta">
+                                        <span><i class="fa fa-user-o" title="Solicitó"/> <t t-esc="a.requester"/></span>
+                                        <span t-if="a.closed_by"><i class="fa fa-check-circle" title="Cerró"/> <t t-esc="a.closed_by"/></span>
+                                        <span t-if="a.feedback" class="som-hub-quote-inline">“<t t-esc="a.feedback"/>”</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+                    <div class="text-center mt-3" t-if="data.history.length > state.historyLimit">
+                        <button class="btn btn-outline-primary btn-sm" t-on-click="showMoreHistory">Ver más</button>
+                    </div>
+                </div>
+
+                <!-- ═══════ CONFIGURACIÓN ═══════ -->
+                <div t-if="state.tab === 'config'" class="som-hub-body">
+                    <div class="som-hub-config-head">
+                        <div>
+                            <p class="som-hub-intro mb-1">
+                                Elige qué actividades quieres recibir en este centro. Lo apagado no se muestra ni cuenta;
+                                el documento y los demás asignados no cambian.
+                            </p>
+                            <p class="som-hub-muted mb-0">
+                                Las actividades nativas de Odoo (las que alguien agenda a mano) siguen llegando al reloj de la barra superior.
+                                Recibiendo <b t-esc="enabledKindsCount"/> de <t t-esc="data.kinds.length"/> tipos.
+                            </p>
+                        </div>
+                        <div class="som-hub-config-actions">
+                            <button class="btn btn-outline-primary btn-sm" t-on-click="() => this.setAllPrefs(true)">Activar todo</button>
+                            <button class="btn btn-outline-secondary btn-sm" t-on-click="() => this.setAllPrefs(false)">Desactivar todo</button>
+                        </div>
+                    </div>
+
+                    <t t-foreach="kindsByCategory" t-as="cat" t-key="cat.key">
+                        <div class="som-hub-group">
+                            <div class="som-hub-group-head"><span class="som-hub-group-name" t-esc="cat.label"/></div>
+                            <div class="som-hub-prefs">
+                                <t t-foreach="cat.kinds" t-as="k" t-key="k.id">
+                                    <label class="som-hub-pref" t-att-class="{ 'som-hub-pref-off': !k.enabled }"
+                                           t-att-style="'--kind-color:' + k.color">
+                                        <span class="som-hub-kind-icon"><i t-att-class="'fa ' + k.icon" title=""/></span>
+                                        <span class="som-hub-pref-text">
+                                            <span class="som-hub-pref-name">
+                                                <t t-esc="k.name"/>
+                                                <span t-if="k.shared" class="som-hub-shared" title="Cuando alguien la atiende, se cierra para todos"><i class="fa fa-users" title=""/></span>
+                                            </span>
+                                            <span class="som-hub-pref-desc" t-esc="k.description"/>
+                                            <span class="som-hub-pref-stats">
+                                                <t t-if="k.pending_count"><b t-esc="k.pending_count"/> pendiente<t t-if="k.pending_count !== 1">s</t> · </t>
+                                                <t t-if="k.ever_count">te ha llegado <t t-esc="k.ever_count"/> vez<t t-if="k.ever_count !== 1">es</t></t>
+                                                <t t-else="">nunca te ha llegado</t>
+                                            </span>
+                                        </span>
+                                        <span class="som-hub-switch" t-att-class="{ on: k.enabled }" t-on-click.prevent="() => this.togglePref(k)">
+                                            <span class="som-hub-switch-knob"/>
+                                        </span>
+                                    </label>
+                                </t>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+
+            </t>
+        </div>
+    </t>
+
+</templates>

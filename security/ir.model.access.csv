@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_som_activity_kind_user,som.activity.kind user,model_som_activity_kind,base.group_user,1,0,0,0
+access_som_activity_kind_admin,som.activity.kind admin,model_som_activity_kind,base.group_system,1,1,1,1
+access_som_activity_pref_user,som.activity.pref user,model_som_activity_pref,base.group_user,1,1,1,1

@@ -2,3 +2,4 @@
 from . import som_global_search
 from . import res_company_favicon
 from . import ir_http_csrf
+from . import som_activity_hub

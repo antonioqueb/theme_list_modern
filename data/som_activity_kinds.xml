@@ -1,0 +1,313 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Catálogo de actividades que generan los módulos SOM.
+
+Cada registro reconoce una actividad por (modelo, prefijo del resumen).
+Lo que NO está aquí es una actividad nativa (agendada a mano) y sigue en el
+relojito. Este archivo se gestiona desde código (noupdate="0"): los
+registros creados a mano por un administrador no se tocan.
+-->
+<odoo>
+
+    <!-- ══════════ AUTORIZACIONES (varios autorizadores: una resolución cierra a todos) ══════════ -->
+    <record id="kind_price_auth" model="som.activity.kind">
+        <field name="key">price_auth</field>
+        <field name="name">Autorizar precios</field>
+        <field name="res_model">price.authorization</field>
+        <field name="summary_prefixes">Autorizar precios</field>
+        <field name="category">auth</field>
+        <field name="icon">fa-tag</field>
+        <field name="color">#0b57d0</field>
+        <field name="sequence">10</field>
+        <field name="shared" eval="True"/>
+        <field name="description">Solicitudes de precio bajo lista que requieren un Autorizador de Precios.</field>
+    </record>
+    <record id="kind_discount_auth" model="som.activity.kind">
+        <field name="key">discount_auth</field>
+        <field name="name">Autorizar descuento</field>
+        <field name="res_model">sale.order</field>
+        <field name="summary_prefixes">Autorizar descuento</field>
+        <field name="category">auth</field>
+        <field name="icon">fa-percent</field>
+        <field name="color">#0b57d0</field>
+        <field name="sequence">20</field>
+        <field name="shared" eval="True"/>
+        <field name="description">Descuentos por encima del umbral retenidos hasta autorizar.</field>
+    </record>
+    <record id="kind_iva_auth" model="som.activity.kind">
+        <field name="key">iva_auth</field>
+        <field name="name">Autorizar quitar IVA</field>
+        <field name="res_model">sale.order</field>
+        <field name="summary_prefixes">Autorizar quitar IVA</field>
+        <field name="category">auth</field>
+        <field name="icon">fa-file-text-o</field>
+        <field name="color">#0b57d0</field>
+        <field name="sequence">30</field>
+        <field name="shared" eval="True"/>
+        <field name="description">Solicitud de exención de IVA en una orden de venta.</field>
+    </record>
+    <record id="kind_delivery_auth" model="som.activity.kind">
+        <field name="key">delivery_auth</field>
+        <field name="name">Autorizar entrega</field>
+        <field name="res_model">delivery.auth.request</field>
+        <field name="summary_prefixes">Autorizar entrega</field>
+        <field name="category">auth</field>
+        <field name="icon">fa-truck</field>
+        <field name="color">#0b57d0</field>
+        <field name="sequence">40</field>
+        <field name="shared" eval="True"/>
+        <field name="description">Entregas sin pago completo que requieren un aprobador.</field>
+    </record>
+    <record id="kind_floor_violation" model="som.activity.kind">
+        <field name="key">floor_violation</field>
+        <field name="name">Precio bajo lo autorizado</field>
+        <field name="res_model">sale.order</field>
+        <field name="summary_prefixes">Precio bajo lo autorizado</field>
+        <field name="category">auth</field>
+        <field name="icon">fa-exclamation-triangle</field>
+        <field name="color">#d0480b</field>
+        <field name="sequence">50</field>
+        <field name="shared" eval="True"/>
+        <field name="description">Alerta a los autorizadores: una línea quedó por debajo del piso autorizado.</field>
+    </record>
+
+    <!-- ══════════ COBRANZA Y PAGOS ══════════ -->
+    <record id="kind_apply_payment" model="som.activity.kind">
+        <field name="key">apply_payment</field>
+        <field name="name">Aplicar pago</field>
+        <field name="res_model">sale.order</field>
+        <field name="summary_prefixes">Aplicar pago</field>
+        <field name="category">cobranza</field>
+        <field name="icon">fa-credit-card</field>
+        <field name="color">#0b8a5c</field>
+        <field name="sequence">10</field>
+        <field name="description">Comprobante o cobro recibido que debe aplicarse a la orden.</field>
+    </record>
+    <record id="kind_overcharge_collect" model="som.activity.kind">
+        <field name="key">overcharge_collect</field>
+        <field name="name">Cobrar excedente</field>
+        <field name="res_model">sale.order</field>
+        <field name="summary_prefixes">Cobrar excedente</field>
+        <field name="category">cobranza</field>
+        <field name="icon">fa-plus-circle</field>
+        <field name="color">#0b8a5c</field>
+        <field name="sequence">20</field>
+        <field name="description">La asignación real superó lo pagado: hay excedente por cobrar.</field>
+    </record>
+    <record id="kind_overcharge_invoice" model="som.activity.kind">
+        <field name="key">overcharge_invoice</field>
+        <field name="name">Facturar excedente</field>
+        <field name="res_model">sale.order</field>
+        <field name="summary_prefixes">Facturar excedente</field>
+        <field name="category">cobranza</field>
+        <field name="icon">fa-file-text</field>
+        <field name="color">#0b8a5c</field>
+        <field name="sequence">30</field>
+        <field name="description">Excedente que debe facturarse.</field>
+    </record>
+    <record id="kind_credit_note" model="som.activity.kind">
+        <field name="key">credit_note</field>
+        <field name="name">Generar nota de crédito</field>
+        <field name="res_model">sale.order</field>
+        <field name="summary_prefixes">Generar nota de crédito</field>
+        <field name="category">cobranza</field>
+        <field name="icon">fa-file-o</field>
+        <field name="color">#0b8a5c</field>
+        <field name="sequence">40</field>
+        <field name="description">Se asignó menos de lo facturado: hace falta nota de crédito.</field>
+    </record>
+    <record id="kind_cash_formal_payment" model="som.activity.kind">
+        <field name="key">cash_formal_payment</field>
+        <field name="name">Registrar pago formal</field>
+        <field name="res_model">cash.receipt</field>
+        <field name="summary_prefixes">Registrar pago formal</field>
+        <field name="category">cobranza</field>
+        <field name="icon">fa-money</field>
+        <field name="color">#0b8a5c</field>
+        <field name="sequence">50</field>
+        <field name="description">Recibo de caja entregado que falta registrar como pago.</field>
+    </record>
+
+    <!-- ══════════ COMISIONES ══════════ -->
+    <record id="kind_commission_auth" model="som.activity.kind">
+        <field name="key">commission_auth</field>
+        <field name="name">Autorizar comisión</field>
+        <field name="res_model">commission.authorization</field>
+        <field name="summary_prefixes">Autorizar comisión</field>
+        <field name="category">comisiones</field>
+        <field name="icon">fa-check-square-o</field>
+        <field name="color">#6b3fd0</field>
+        <field name="sequence">10</field>
+        <field name="shared" eval="True"/>
+        <field name="description">Solicitud de % de comisión por encima del permitido.</field>
+    </record>
+    <record id="kind_commission_incident" model="som.activity.kind">
+        <field name="key">commission_incident</field>
+        <field name="name">Incidencia de cobro</field>
+        <field name="res_model">commission.incident</field>
+        <field name="summary_prefixes">Incidencia de cobro</field>
+        <field name="category">comisiones</field>
+        <field name="icon">fa-life-ring</field>
+        <field name="color">#6b3fd0</field>
+        <field name="sequence">20</field>
+        <field name="shared" eval="True"/>
+        <field name="description">Cobro que no pudo ligarse a una comisión; lo atiende un responsable de comisiones.</field>
+    </record>
+    <record id="kind_commission_error" model="som.activity.kind">
+        <field name="key">commission_error</field>
+        <field name="name">Comisión no calculada</field>
+        <field name="summary_prefixes">Comisión no calculada</field>
+        <field name="category">comisiones</field>
+        <field name="icon">fa-bug</field>
+        <field name="color">#6b3fd0</field>
+        <field name="sequence">30</field>
+        <field name="shared" eval="True"/>
+        <field name="description">Error al calcular la comisión de una factura u orden.</field>
+    </record>
+    <record id="kind_commission_reversal" model="som.activity.kind">
+        <field name="key">commission_reversal</field>
+        <field name="name">Reversa de comisión</field>
+        <field name="res_model">sale.order</field>
+        <field name="summary_prefixes">Reversa de comisión</field>
+        <field name="category">comisiones</field>
+        <field name="icon">fa-undo</field>
+        <field name="color">#6b3fd0</field>
+        <field name="sequence">40</field>
+        <field name="shared" eval="True"/>
+        <field name="description">Se desconcilió un cobro: la comisión se neutralizó.</field>
+    </record>
+    <record id="kind_commission_authorized" model="som.activity.kind">
+        <field name="key">commission_authorized</field>
+        <field name="name">Comisión autorizada</field>
+        <field name="res_model">sale.order</field>
+        <field name="summary_prefixes">Comisión autorizada</field>
+        <field name="category">comisiones</field>
+        <field name="icon">fa-thumbs-o-up</field>
+        <field name="color">#6b3fd0</field>
+        <field name="sequence">50</field>
+        <field name="description">Aviso al solicitante: su comisión fue autorizada.</field>
+    </record>
+    <record id="kind_commission_audit" model="som.activity.kind">
+        <field name="key">commission_audit</field>
+        <field name="name">Cobros sin comisión</field>
+        <field name="res_model">res.partner</field>
+        <field name="summary_prefixes">Cobros sin comisión</field>
+        <field name="category">comisiones</field>
+        <field name="icon">fa-search</field>
+        <field name="color">#6b3fd0</field>
+        <field name="sequence">60</field>
+        <field name="description">Auditoría nocturna: cobros que no generaron comisión.</field>
+    </record>
+    <record id="kind_commission_external_migration" model="som.activity.kind">
+        <field name="key">commission_external_migration</field>
+        <field name="name">Comisiones externas con usuarios internos</field>
+        <field name="res_model">res.partner</field>
+        <field name="summary_prefixes">Comisiones externas con usuarios internos</field>
+        <field name="category">comisiones</field>
+        <field name="icon">fa-wrench</field>
+        <field name="color">#6b3fd0</field>
+        <field name="sequence">70</field>
+        <field name="description">Revisión puntual generada por una migración.</field>
+    </record>
+
+    <!-- ══════════ CAJA ══════════ -->
+    <record id="kind_petty_cash_receive" model="som.activity.kind">
+        <field name="key">petty_cash_receive</field>
+        <field name="name">Recibir fondo de caja chica</field>
+        <field name="res_model">petty.cash.entry</field>
+        <field name="summary_prefixes">Recibir fondo de caja chica</field>
+        <field name="category">caja</field>
+        <field name="icon">fa-inbox</field>
+        <field name="color">#b8860b</field>
+        <field name="sequence">10</field>
+        <field name="shared" eval="True"/>
+        <field name="description">La caja principal entregó efectivo: Caja Chica debe confirmar que lo recibió.</field>
+    </record>
+
+    <!-- ══════════ INVENTARIO Y LOGÍSTICA ══════════ -->
+    <record id="kind_port_arrival" model="som.activity.kind">
+        <field name="key">port_arrival</field>
+        <field name="name">Arribo a puerto: procesar recepción</field>
+        <field name="summary_prefixes">Arribo a puerto</field>
+        <field name="category">inventario</field>
+        <field name="icon">fa-ship</field>
+        <field name="color">#0b7fd0</field>
+        <field name="sequence">10</field>
+        <field name="description">Un embarque llegó a puerto: hay una recepción por procesar.</field>
+    </record>
+    <record id="kind_logistics_delivery" model="som.activity.kind">
+        <field name="key">logistics_delivery</field>
+        <field name="name">Logística: programar entrega</field>
+        <field name="res_model">sale.order</field>
+        <field name="summary_prefixes">Entrega autorizada
+Pago registrado</field>
+        <field name="category">inventario</field>
+        <field name="icon">fa-calendar-check-o</field>
+        <field name="color">#0b7fd0</field>
+        <field name="sequence">20</field>
+        <field name="shared" eval="True"/>
+        <field name="description">Aviso a Logística: la orden ya puede entregarse.</field>
+    </record>
+    <record id="kind_hold_expired" model="som.activity.kind">
+        <field name="key">hold_expired</field>
+        <field name="name">Reserva vencida</field>
+        <field name="res_model">stock.lot.hold.order</field>
+        <field name="summary_prefixes">Reserva VENCIDA</field>
+        <field name="category">inventario</field>
+        <field name="icon">fa-clock-o</field>
+        <field name="color">#0b7fd0</field>
+        <field name="sequence">30</field>
+        <field name="description">Aviso al vendedor: una reserva de placas venció y se liberó.</field>
+    </record>
+
+    <!-- ══════════ AVISOS DE VENTA (un solo destinatario) ══════════ -->
+    <record id="kind_discount_result" model="som.activity.kind">
+        <field name="key">discount_result</field>
+        <field name="name">Resultado de descuento</field>
+        <field name="res_model">sale.order</field>
+        <field name="summary_prefixes">Descuento autorizado
+Descuento rechazado</field>
+        <field name="category">avisos</field>
+        <field name="icon">fa-percent</field>
+        <field name="color">#5a6b7d</field>
+        <field name="sequence">10</field>
+        <field name="description">Aviso al vendedor: su descuento fue autorizado o rechazado.</field>
+    </record>
+    <record id="kind_iva_result" model="som.activity.kind">
+        <field name="key">iva_result</field>
+        <field name="name">Resultado de exención de IVA</field>
+        <field name="res_model">sale.order</field>
+        <field name="summary_prefixes">Exención de IVA</field>
+        <field name="category">avisos</field>
+        <field name="icon">fa-file-text-o</field>
+        <field name="color">#5a6b7d</field>
+        <field name="sequence">20</field>
+        <field name="description">Aviso al vendedor: su solicitud de quitar IVA fue aprobada o rechazada.</field>
+    </record>
+    <record id="kind_iva_removed" model="som.activity.kind">
+        <field name="key">iva_removed</field>
+        <field name="name">IVA eliminado</field>
+        <field name="res_model">sale.order</field>
+        <field name="summary_prefixes">IVA eliminado</field>
+        <field name="category">avisos</field>
+        <field name="icon">fa-info-circle</field>
+        <field name="color">#5a6b7d</field>
+        <field name="sequence">30</field>
+        <field name="description">Aviso al vendedor: un autorizador quitó el IVA de su orden.</field>
+    </record>
+
+    <!-- ══════════ SISTEMA ══════════ -->
+    <record id="kind_whatsapp_paused" model="som.activity.kind">
+        <field name="key">whatsapp_paused</field>
+        <field name="name">WhatsApp en pausa</field>
+        <field name="res_model">whatsapp.account</field>
+        <field name="summary_prefixes">WhatsApp</field>
+        <field name="category">sistema</field>
+        <field name="icon">fa-whatsapp</field>
+        <field name="color">#25d366</field>
+        <field name="sequence">10</field>
+        <field name="shared" eval="True"/>
+        <field name="description">El detector anti-baneo pausó una cuenta de WhatsApp.</field>
+    </record>
+
+</odoo>
