@@ -391,6 +391,35 @@ Autorización Rechazada</field>
         <field name="group_xmlids">sales_team.group_sale_salesman</field>
     </record>
 
+    <record id="kind_delivery_rescheduled" model="som.activity.kind">
+        <field name="key">delivery_rescheduled</field>
+        <field name="name">Entrega reprogramada</field>
+        <field name="res_model">sale.delivery.schedule</field>
+        <field name="summary_prefixes">Entrega reprogramada</field>
+        <field name="category">avisos</field>
+        <field name="icon">fa-calendar</field>
+        <field name="color">#5a6b7d</field>
+        <field name="sequence">60</field>
+        <field name="notice" eval="True"/>
+        <field name="notice_days">7</field>
+        <field name="group_xmlids">sales_team.group_sale_salesman</field>
+        <field name="description">Aviso al vendedor: logística (o el recorrido automático) movió la fecha de su entrega programada.</field>
+    </record>
+    <record id="kind_delivery_rollover" model="som.activity.kind">
+        <field name="key">delivery_rollover</field>
+        <field name="name">Entregas no realizadas recorridas</field>
+        <field name="res_model" eval="False"/>
+        <field name="summary_prefixes">Entregas no realizadas</field>
+        <field name="category">inventario</field>
+        <field name="icon">fa-calendar-check-o</field>
+        <field name="color">#0b7fd0</field>
+        <field name="sequence">40</field>
+        <field name="notice" eval="True"/>
+        <field name="notice_days">2</field>
+        <field name="group_xmlids">sale_delivery_wizard.group_delivery_user</field>
+        <field name="description">Resumen diario a Entregas: programaciones que no se realizaron y se recorrieron a hoy.</field>
+    </record>
+
     <!-- ══════════ SISTEMA ══════════ -->
     <record id="kind_whatsapp_paused" model="som.activity.kind">
         <field name="key">whatsapp_paused</field>
