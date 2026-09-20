@@ -169,16 +169,19 @@ class SomActivityKind(models.Model):
                 continue
             Model = self.env[res_model].sudo().with_context(active_test=False)
             try:
-                if per_activity:
-                    resolved = model_acts.browse()
-                    for act in model_acts:
-                        domain = safe_eval(kind.resolved_domain, {'activity_date': act.create_date})
-                        if Model.search_count([('id', '=', act.res_id)] + domain):
-                            resolved |= act
-                else:
-                    domain = safe_eval(kind.resolved_domain)
-                    ids = set(Model.search([('id', 'in', list(set(model_acts.mapped('res_id'))))] + domain).ids)
-                    resolved = model_acts.filtered(lambda a: a.res_id in ids)
+                # Savepoint: un dominio que truene en SQL no deja la
+                # transacción abortada para los demás tipos del cron.
+                with self.env.cr.savepoint():
+                    if per_activity:
+                        resolved = model_acts.browse()
+                        for act in model_acts:
+                            domain = safe_eval(kind.resolved_domain, {'activity_date': act.create_date})
+                            if Model.search_count([('id', '=', act.res_id)] + domain):
+                                resolved |= act
+                    else:
+                        domain = safe_eval(kind.resolved_domain)
+                        ids = set(Model.search([('id', 'in', list(set(model_acts.mapped('res_id'))))] + domain).ids)
+                        resolved = model_acts.filtered(lambda a: a.res_id in ids)
             except Exception as exc:  # noqa: BLE001 — un dominio que no aplica a este modelo no tumba el cron
                 _logger.debug('[som_activity_hub] dominio de «%s» no aplica a %s: %s', kind.name, res_model, exc)
                 continue
@@ -202,12 +205,9 @@ class SomActivityKind(models.Model):
         env_user = self.env(user=user.id)
         xmlids = [x.strip() for x in (self.group_xmlids or '').split(',') if x.strip()]
         if xmlids:
-            found = False
             for xmlid in xmlids:
-                if env_user.ref(xmlid, raise_if_not_found=False):
-                    found = True
-                    if env_user.user.has_group(xmlid):
-                        return True
+                if env_user.ref(xmlid, raise_if_not_found=False) and env_user.user.has_group(xmlid):
+                    return True
             return False
         if self.res_model and self.res_model in self.env:
             try:
@@ -356,7 +356,6 @@ class MailActivity(models.Model):
             'feedback': feedback,
         })
 
-    @api.model
     def _action_done(self, feedback=False, attachment_ids=None):
         siblings = self._som_sibling_activities()
         res = super()._action_done(feedback=feedback, attachment_ids=attachment_ids)
@@ -372,13 +371,19 @@ class MailActivityMixin(models.AbstractModel):
     módulos sigue viendo y cerrando sus actividades SOM ahí."""
     _inherit = 'mail.activity.mixin'
 
+    # OJO: Odoo fusiona los kwargs de la definición del core (related=...,
+    # readonly=False) con los de aquí; sin `related=None, readonly=True`
+    # explícitos el campo seguiría siendo related y el compute jamás correría.
     activity_type_id = fields.Many2one(
         'mail.activity.type', 'Next Activity Type',
+        related=None, readonly=True,
         compute='_som_compute_next_activity', search='_search_activity_type_id',
         groups="base.group_user")
-    activity_type_icon = fields.Char('Activity Type Icon', compute='_som_compute_next_activity')
+    activity_type_icon = fields.Char(
+        'Activity Type Icon', related=None, readonly=True, compute='_som_compute_next_activity')
     activity_summary = fields.Char(
         'Next Activity Summary',
+        related=None, readonly=True,
         compute='_som_compute_next_activity', search='_search_activity_summary',
         groups="base.group_user")
 
@@ -530,6 +535,16 @@ class SomActivityHub(models.AbstractModel):
         return info
 
     @api.model
+    def _done_stamp(self, act):
+        """date_done es Date en Odoo 19; la hora real del cierre es write_date."""
+        if act.active or not act.date_done:
+            return ''
+        stamp = act.write_date if (act.write_date and act.write_date.date() >= act.date_done) else None
+        if stamp:
+            return fields.Datetime.context_timestamp(self, stamp).strftime('%Y-%m-%d %H:%M')
+        return act.date_done.strftime('%Y-%m-%d')
+
+    @api.model
     def _note_text(self, note):
         text = html2plaintext(note or '').strip()
         text = re.sub(r'\s+', ' ', text)
@@ -565,7 +580,7 @@ class SomActivityHub(models.AbstractModel):
             'state': act.state if act.active else 'done',
             'active': act.active,
             'feedback': act.feedback or '',
-            'done_at': act.date_done.strftime('%Y-%m-%d %H:%M') if act.date_done else '',
+            'done_at': self._done_stamp(act),
             'closed_by': act.write_uid.name if (not act.active and act.write_uid) else '',
             'co_assignees': [],
         }
@@ -607,7 +622,7 @@ class SomActivityHub(models.AbstractModel):
         pending = pending_all.filtered(visible)
 
         history = Activity.with_context(active_test=False).search(
-            base + [('active', '=', False)], order='date_done desc, id desc', limit=self.HISTORY_LIMIT)
+            base + [('active', '=', False)], order='date_done desc, write_date desc, id desc', limit=self.HISTORY_LIMIT)
         history = history.filtered(visible)
 
         # Lo que YO pedí y otros deben atender (o ya atendieron).
@@ -615,7 +630,7 @@ class SomActivityHub(models.AbstractModel):
         requested_open = Activity.sudo().search(mine_domain + [('active', '=', True)],
                                                 order='id desc', limit=self.HISTORY_LIMIT)
         requested_closed = Activity.sudo().with_context(active_test=False).search(
-            mine_domain + [('active', '=', False)], order='date_done desc, id desc', limit=self.HISTORY_LIMIT)
+            mine_domain + [('active', '=', False)], order='date_done desc, write_date desc, id desc', limit=self.HISTORY_LIMIT)
         requests = self._group_requests(requested_open, requested_closed)
 
         # Catálogo para configurar: todos los tipos, con cuántas tiene el usuario.
@@ -669,9 +684,9 @@ class SomActivityHub(models.AbstractModel):
             if k in groups and groups[k]['status'] == 'open':
                 continue  # aún abierta para alguien: manda lo pendiente
             g = groups.setdefault(k, self._request_seed(act))
-            if not g['resolved_by'] or (act.feedback and not act.feedback.startswith('Atendida por')):
+            if not g['resolved_by'] or act.write_uid == act.user_id:
                 g['resolved_by'] = act.write_uid.name or ''
-                g['resolved_at'] = act.date_done.strftime('%Y-%m-%d %H:%M') if act.date_done else ''
+                g['resolved_at'] = self._done_stamp(act)
                 g['feedback'] = act.feedback or ''
             g['status'] = 'closed'
         out = list(groups.values())
