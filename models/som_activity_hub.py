@@ -628,7 +628,8 @@ class SomActivityHub(models.AbstractModel):
                 [('user_id', '=', user.id)], ['x_som_kind_id'], ['__count'])
         }
         kinds = []
-        for kind in all_kinds:
+        # Sin permiso = no existe para el usuario: no se lista (ni con candado).
+        for kind in all_kinds.filtered(lambda k: available.get(k.id, True)):
             kp = self._kind_payload(kind)
             kp.update({
                 'enabled': kind.id not in disabled and available.get(kind.id, True),
