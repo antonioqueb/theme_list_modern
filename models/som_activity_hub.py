@@ -184,6 +184,15 @@ class MailActivity(models.Model):
             domain = Domain(domain) & Domain('x_som_kind_id', '=', False)
         return super()._search(domain, offset, limit, order, bypass_access=bypass_access, **kwargs)
 
+    def action_notify(self):
+        # Sin duplicados: asignar una actividad SOM NO manda el aviso nativo
+        # "te asignaron una actividad" (correo + bandeja de mensajes). Esas
+        # actividades viven únicamente en el Centro de Actividades.
+        native = self.filtered(lambda a: not a.x_som_kind_id)
+        if native:
+            return super(MailActivity, native).action_notify()
+        return None
+
     def _som_sibling_activities(self):
         """Actividades hermanas: mismo documento + mismo tipo SOM compartido,
         vivas, de OTROS usuarios (o del mismo, si hubiera duplicados)."""
