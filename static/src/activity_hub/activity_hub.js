@@ -8,7 +8,7 @@
  * (`mail.activity/updated`) con un debounce corto; cualquier acción del
  * usuario (atender, cambiar preferencia) vuelve a cargar.
  */
-import { Component, onWillStart, onWillUnmount, useState } from "@odoo/owl";
+import { Component, onWillDestroy, onWillStart, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 
@@ -56,7 +56,10 @@ export class SomActivityHub extends Component {
         this.busService.subscribe("mail.activity/updated", this._onBus);
 
         onWillStart(() => this.load());
-        onWillUnmount(() => {
+        // onWillDestroy y no onWillUnmount: si el usuario cambia de acción
+        // mientras load() sigue en vuelo, el componente muere sin montarse y
+        // la suscripción al bus quedaría viva toda la sesión.
+        onWillDestroy(() => {
             this.busService.unsubscribe("mail.activity/updated", this._onBus);
             if (this._refreshTimer) {
                 clearTimeout(this._refreshTimer);
