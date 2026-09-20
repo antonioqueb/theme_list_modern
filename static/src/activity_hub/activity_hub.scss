@@ -14,7 +14,14 @@
     --som-ok: #0b8a5c;
     --kind-color: var(--som-blue);
 
-    min-height: 100%;
+    // El contenedor de acciones de Odoo es flex sin scroll propio: el
+    // client action debe ocupar el alto y desplazarse él mismo.
+    flex: 1 1 auto;
+    height: 100%;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
     background: var(--som-bg);
     color: var(--som-ink);
     padding: 20px 24px 48px;
