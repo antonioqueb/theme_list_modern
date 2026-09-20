@@ -39,6 +39,7 @@ from odoo import api, fields, models, _
 from odoo.exceptions import AccessError, UserError
 from odoo.fields import Domain
 from odoo.tools import html2plaintext
+from odoo.addons.mail.tools.discuss import Store
 
 _logger = logging.getLogger(__name__)
 
@@ -161,6 +162,17 @@ class MailActivity(models.Model):
     x_som_kind_id = fields.Many2one(
         'som.activity.kind', string='Tipo SOM', index=True, ondelete='set null',
         help="Tipo del Centro de Actividades SOM. Vacío = actividad nativa (relojito).")
+    x_som_hub = fields.Boolean('Vive en el Centro SOM', compute='_compute_x_som_hub')
+
+    @api.depends('x_som_kind_id')
+    def _compute_x_som_hub(self):
+        for act in self:
+            act.x_som_hub = bool(act.x_som_kind_id)
+
+    def _to_store_defaults(self, target):
+        # El webclient (popover de actividades de listas/kanban/form) filtra
+        # con esta bandera para no volver a pintar lo que ya vive en el Centro.
+        return super()._to_store_defaults(target) + ['x_som_hub']
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -223,6 +235,104 @@ class MailActivity(models.Model):
         if siblings:
             siblings._som_close_silently(_('Atendida por %s') % self.env.user.name)
         return res
+
+
+class MailActivityMixin(models.AbstractModel):
+    """Los resúmenes nativos del registro (columna "Actividades" de las
+    listas, íconos de kanban/form, decoración de estado) se calculan SOLO con
+    las actividades nativas. `activity_ids` NO se toca: el código de los
+    módulos sigue viendo y cerrando sus actividades SOM ahí."""
+    _inherit = 'mail.activity.mixin'
+
+    activity_type_id = fields.Many2one(
+        'mail.activity.type', 'Next Activity Type',
+        compute='_som_compute_next_activity', search='_search_activity_type_id',
+        groups="base.group_user")
+    activity_type_icon = fields.Char('Activity Type Icon', compute='_som_compute_next_activity')
+    activity_summary = fields.Char(
+        'Next Activity Summary',
+        compute='_som_compute_next_activity', search='_search_activity_summary',
+        groups="base.group_user")
+
+    def _som_native_activities(self):
+        self.ensure_one()
+        return self.activity_ids.filtered(lambda a: not a.x_som_kind_id)
+
+    @api.depends('activity_ids.activity_type_id', 'activity_ids.summary', 'activity_ids.x_som_kind_id')
+    def _som_compute_next_activity(self):
+        for record in self:
+            first = record._som_native_activities()[:1]
+            record.activity_type_id = first.activity_type_id
+            record.activity_type_icon = first.activity_type_id.icon
+            record.activity_summary = first.summary
+
+    @api.depends('activity_ids.activity_type_id.decoration_type', 'activity_ids.activity_type_id.icon',
+                 'activity_ids.x_som_kind_id')
+    def _compute_activity_exception_type(self):
+        self.mapped('activity_ids.activity_type_id.decoration_type')
+        for record in self:
+            exception_type = False
+            for activity_type in record._som_native_activities().mapped('activity_type_id'):
+                if activity_type.decoration_type == 'danger':
+                    exception_type = activity_type
+                    break
+                if activity_type.decoration_type == 'warning':
+                    exception_type = activity_type
+            record.activity_exception_decoration = exception_type and exception_type.decoration_type
+            record.activity_exception_icon = exception_type and exception_type.icon
+
+    @api.depends('activity_ids.user_id', 'activity_ids.x_som_kind_id')
+    def _compute_activity_user_id(self):
+        for record in self:
+            acts = record._som_native_activities()
+            record.activity_user_id = acts[0].user_id if acts else False
+
+    @api.depends('activity_ids.state', 'activity_ids.x_som_kind_id')
+    def _compute_activity_state(self):
+        for record in self:
+            states = record._som_native_activities().mapped('state')
+            if 'overdue' in states:
+                record.activity_state = 'overdue'
+            elif 'today' in states:
+                record.activity_state = 'today'
+            elif 'planned' in states:
+                record.activity_state = 'planned'
+            else:
+                record.activity_state = False
+
+    @api.depends('activity_ids.date_deadline', 'activity_ids.x_som_kind_id')
+    def _compute_activity_date_deadline(self):
+        for record in self:
+            acts = record._som_native_activities()
+            record.activity_date_deadline = acts[:1].date_deadline
+
+    @api.depends('activity_ids.date_deadline', 'activity_ids.user_id', 'activity_ids.x_som_kind_id')
+    @api.depends_context('uid')
+    def _compute_my_activity_date_deadline(self):
+        for record in self:
+            record.my_activity_date_deadline = next((
+                a.date_deadline for a in record._som_native_activities()
+                if a.user_id.id == record.env.uid
+            ), False)
+
+
+class MailThread(models.AbstractModel):
+    """El chatter pide las actividades del registro por `request_list`
+    ("activities"): se entregan solo las nativas; las SOM viven en el Centro."""
+    _inherit = 'mail.thread'
+
+    def _thread_to_store(self, store, fields, *, request_list=None):
+        if (
+            request_list and "activities" in request_list
+            and isinstance(self.env[self._name], self.env.registry["mail.activity.mixin"])
+        ):
+            trimmed = [r for r in request_list if r != "activities"]
+            res = super()._thread_to_store(store, fields, request_list=trimmed)
+            for thread in self:
+                acts = thread.with_context(active_test=True).activity_ids.filtered(lambda a: not a.x_som_kind_id)
+                store.add(thread, {"activities": Store.Many(acts)}, as_thread=True)
+            return res
+        return super()._thread_to_store(store, fields, request_list=request_list)
 
 
 class ResUsers(models.Model):

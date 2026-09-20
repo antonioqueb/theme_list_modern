@@ -13,8 +13,9 @@ registros creados a mano por un administrador no se tocan.
     <record id="kind_price_auth" model="som.activity.kind">
         <field name="key">price_auth</field>
         <field name="name">Autorizar precios</field>
-        <field name="res_model">price.authorization</field>
-        <field name="summary_prefixes">Autorizar precios</field>
+        <field name="res_model" eval="False"/>
+        <field name="summary_prefixes">Autorizar precios
+Re-autorizar precios</field>
         <field name="category">auth</field>
         <field name="icon">fa-tag</field>
         <field name="color">#0b57d0</field>
