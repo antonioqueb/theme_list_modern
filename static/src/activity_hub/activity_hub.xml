@@ -99,7 +99,8 @@
 
                             <div class="som-hub-cards">
                                 <t t-foreach="group.items" t-as="a" t-key="a.id">
-                                    <div class="som-hub-card" t-att-class="{ 'som-hub-card-overdue': a.state === 'overdue' }"
+                                    <div class="som-hub-card" t-att-class="{ 'som-hub-card-overdue': a.state === 'overdue', 'som-hub-card-focus': state.focusId === a.id }"
+                                         t-att-id="'som-act-' + a.id"
                                          t-att-style="'--kind-color:' + (a.kind ? a.kind.color : '#0b57d0')">
                                         <div class="som-hub-card-main">
                                             <div class="som-hub-card-top">
@@ -202,7 +203,7 @@
                     <div t-if="!filteredHistory.length" class="som-hub-empty">Sin historial todavía.</div>
                     <div class="som-hub-list">
                         <t t-foreach="filteredHistory" t-as="a" t-key="a.id">
-                            <div class="som-hub-row" t-att-style="'--kind-color:' + (a.kind ? a.kind.color : '#0b57d0')">
+                            <div class="som-hub-row" t-att-class="{ 'som-hub-card-focus': state.focusId === a.id }" t-att-id="'som-act-' + a.id" t-att-style="'--kind-color:' + (a.kind ? a.kind.color : '#0b57d0')">
                                 <div class="som-hub-row-when" t-esc="fmtDate(a.done_at)"/>
                                 <div class="som-hub-row-what">
                                     <span class="som-hub-kind-tag" t-if="a.kind">

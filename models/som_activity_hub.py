@@ -36,7 +36,9 @@ import logging
 import re
 from datetime import timedelta
 
-from odoo import api, fields, models, _
+from markupsafe import Markup
+from odoo.tools.misc import get_lang
+from odoo import tools, api, fields, models, _
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.fields import Domain
 from odoo.tools import html2plaintext
@@ -328,10 +330,58 @@ class MailActivity(models.Model):
         return super()._search(domain, offset, limit, order, bypass_access=bypass_access, **kwargs)
 
     def action_notify(self):
-        # Sin duplicados: asignar una actividad (SOM o manual) NO manda el
-        # aviso nativo "te asignaron una actividad" (correo + bandeja de
-        # mensajes). Todas viven únicamente en el Centro de Actividades.
-        return None
+        """Aviso de asignación (bandeja de mensajes + correo), como el nativo,
+        pero apuntando al Centro de Actividades (23 sep 2026: el usuario
+        pidió que los avisos vuelvan a llegar y que al abrirlos se abra la
+        actividad directamente en el Centro). El cuerpo lleva
+        `data-som-activity-id`: el systray lo lee para abrir el Centro con
+        la actividad resaltada (activity_notification_open.js) y el enlace
+        hace lo mismo desde el correo o la bandeja."""
+        base_url = self.get_base_url()
+        for activity in self.filtered(lambda a: a.user_id and a.res_model and a.res_id):
+            act = activity
+            if act.user_id.lang:
+                act = act.with_context(lang=act.user_id.lang)
+            record = act.env[act.res_model].browse(act.res_id)
+            if not record.exists() or not hasattr(record, 'message_notify'):
+                continue
+            model_description = act.env['ir.model']._get(act.res_model).display_name
+            kind = act.x_som_kind_id
+            kind_name = kind.name if kind else (act.activity_type_id.name or _('Actividad'))
+            url = '%s/odoo/action-theme_list_modern.activity_hub?som_activity_id=%s' % (base_url, act.id)
+            deadline = act.date_deadline.strftime(get_lang(act.env).date_format) if act.date_deadline else ''
+            note = tools.html2plaintext(act.note or '').strip()
+            if len(note) > 300:
+                note = note[:297] + '…'
+            body = Markup(
+                '<div data-som-activity-id="%(id)s">'
+                '<p><b>%(kind)s</b>: %(summary)s</p>'
+                '<p>%(model)s <b>%(record)s</b>%(deadline)s</p>'
+                '%(note)s'
+                '<p><a href="%(url)s" style="display:inline-block;padding:8px 14px;'
+                'background:#0b57d0;color:#fff;border-radius:6px;text-decoration:none;'
+                'font-weight:600">Abrir en el Centro de Actividades</a></p>'
+                '</div>') % {
+                    'id': act.id,
+                    'kind': kind_name,
+                    'summary': act.summary or '',
+                    'model': model_description,
+                    'record': record.display_name or '',
+                    'deadline': (' · ' + _('vence %s') % deadline) if deadline else '',
+                    'note': Markup('<p style="color:#555">%s</p>') % note if note else Markup(''),
+                    'url': url,
+                }
+            record.message_notify(
+                partner_ids=act.user_id.partner_id.ids,
+                body=body,
+                model_description=model_description,
+                email_layout_xmlid='mail.mail_notification_layout',
+                subject=_('%(kind)s: %(summary)s · %(record)s') % {
+                    'kind': kind_name, 'summary': act.summary or '',
+                    'record': record.display_name or ''},
+                subtitles=[_('Actividad: %s') % kind_name] + (
+                    [_('Vence: %s') % deadline] if deadline else []),
+            )
 
     def _som_sibling_activities(self):
         """Actividades hermanas: mismo documento + mismo tipo SOM compartido,

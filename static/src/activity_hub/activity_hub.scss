@@ -423,3 +423,13 @@
         &-card-actions { justify-content: stretch; .btn { flex: 1; } }
     }
 }
+
+// Actividad abierta desde un aviso: resaltada hasta que el usuario actúe.
+.som-hub-card-focus {
+    box-shadow: 0 0 0 3px var(--kind-color, #0b57d0) !important;
+    animation: som-hub-focus-pulse 1.2s ease-in-out 3;
+}
+@keyframes som-hub-focus-pulse {
+    0%, 100% { box-shadow: 0 0 0 3px var(--kind-color, #0b57d0); }
+    50% { box-shadow: 0 0 0 8px rgba(11, 87, 208, 0.18); }
+}

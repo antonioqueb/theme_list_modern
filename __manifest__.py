@@ -1,6 +1,6 @@
 {
     'name': 'Custom List Column Width',
-    'version': '19.0.29.6.0',
+    'version': '19.0.29.7.0',
     'summary': 'Branding SOM, anchos de columnas, Búsqueda Global y Centro de Actividades',
     'category': 'Technical',
     'author': 'Alphaqueb Consulting SAS',
@@ -36,6 +36,7 @@
             'theme_list_modern/static/src/activity_hub/activity_hub.js',
             'theme_list_modern/static/src/activity_hub/activity_systray_remove.js',
             'theme_list_modern/static/src/activity_hub/activity_popover_patch.js',
+            'theme_list_modern/static/src/activity_hub/activity_notification_open.js',
         ],
     },
     'installable': True,

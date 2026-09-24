@@ -49,7 +49,15 @@ export class SomActivityHub extends Component {
             feedbackText: "",
             busy: {},
             historyLimit: 40,
+            focusId: 0,
         });
+        // Abierto desde un aviso (systray, bandeja o correo): la actividad
+        // llega en params (URL ?som_activity_id=) o en el contexto (doAction).
+        const action = this.props.action || {};
+        this._pendingFocus = Number(
+            (action.params && action.params.som_activity_id) ||
+            (action.context && action.context.som_activity_id) || 0
+        );
 
         this._refreshTimer = null;
         this._onBus = () => this.scheduleRefresh();
@@ -75,12 +83,40 @@ export class SomActivityHub extends Component {
         this.state.failed = false;
         try {
             this.state.data = await this.orm.call("som.activity.hub", "get_data", []);
+            if (this._pendingFocus) {
+                this.focusActivity(this._pendingFocus);
+                this._pendingFocus = 0;
+            }
         } catch (e) {
             console.error("[SOM ACTIVITY HUB] fallo al cargar", e);
             this.state.failed = true;
         } finally {
             this.state.loading = false;
         }
+    }
+
+    /** Muestra y resalta una actividad concreta (llegada desde un aviso). */
+    focusActivity(id) {
+        const data = this.data;
+        const inPending = data.pending.some((a) => a.id === id);
+        const inHistory = !inPending && data.history.some((a) => a.id === id);
+        if (!inPending && !inHistory) {
+            this.notification.add(
+                "Esa actividad ya no está en tu Centro: fue atendida, reasignada o su tipo está desactivado.",
+                { type: "warning" }
+            );
+            return;
+        }
+        this.state.tab = inPending ? "pending" : "history";
+        this.state.category = "all";
+        this.state.search = "";
+        this.state.focusId = id;
+        setTimeout(() => {
+            const el = document.getElementById("som-act-" + id);
+            if (el) {
+                el.scrollIntoView({ behavior: "smooth", block: "center" });
+            }
+        }, 80);
     }
 
     scheduleRefresh() {
