@@ -38,7 +38,7 @@ from datetime import timedelta
 
 from markupsafe import Markup
 from odoo.tools.misc import get_lang
-from odoo import tools, api, fields, models, _
+from odoo import tools, api, fields, models, SUPERUSER_ID, _
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.fields import Domain
 from odoo.tools import html2plaintext
@@ -644,6 +644,79 @@ class SomActivityHub(models.AbstractModel):
             ])
             payload['co_assignees'] = sorted({u.name for u in others.user_id if u.name})
         return payload
+
+    # ------------------------------------------------------------------
+    # Puesta al día de avisos (23 sep 2026)
+    # ------------------------------------------------------------------
+    @api.model
+    def _som_catchup_notify(self, since, max_items=40):
+        """Un aviso RESUMEN por usuario (bandeja + correo) con las actividades
+        vivas que se le asignaron desde `since` y que nunca recibieron aviso
+        (entre el 20 y el 23 sep 2026 action_notify estaba apagado). Idempotente:
+        omite las actividades que ya aparecen en algún aviso (data-som-activity-id
+        o data-som-activity-ids). Devuelve {user_id: n_actividades}."""
+        Activity = self.env['mail.activity'].sudo()
+        Message = self.env['mail.message'].sudo()
+        base_url = self.get_base_url()
+        acts = Activity.search([
+            ('create_date', '>=', since), ('active', '=', True),
+            ('user_id', '!=', False), ('res_model', '!=', False),
+        ], order='user_id, create_date')
+        by_user = {}
+        for act in acts:
+            if act.create_uid and act.create_uid == act.user_id:
+                continue  # el nativo tampoco avisa lo que uno se asigna a sí mismo
+            already = Message.search_count([
+                '|', ('body', 'ilike', 'data-som-activity-id="%s"' % act.id),
+                ('body', 'ilike', '[%s]' % act.id),
+                ('message_type', '=', 'user_notification'),
+                ('partner_ids', 'in', act.user_id.partner_id.ids),
+            ], limit=1)
+            if already:
+                continue
+            by_user.setdefault(act.user_id, Activity.browse())
+            by_user[act.user_id] |= act
+        result = {}
+        for user, user_acts in by_user.items():
+            partner = user.partner_id
+            if not partner:
+                continue
+            items = []
+            for act in user_acts[:max_items]:
+                info = self._record_info(act.res_model, act.res_id)
+                kind_name = act.x_som_kind_id.name or (act.activity_type_id.name or _('Actividad'))
+                url = '%s/odoo/action-theme_list_modern.activity_hub?som_activity_id=%s' % (base_url, act.id)
+                items.append(Markup(
+                    '<li><a href="%s">%s</a> — %s <b>%s</b>%s</li>') % (
+                        url, act.summary or kind_name, info['model_label'] or '',
+                        info['res_name'] or act.res_name or '',
+                        (' · ' + _('vence %s') % act.date_deadline.strftime('%d/%m/%Y')) if act.date_deadline else ''))
+            more = len(user_acts) - len(items)
+            hub_url = '%s/odoo/action-theme_list_modern.activity_hub' % base_url
+            body = Markup(
+                '<div data-som-activity-hub="1" data-som-activity-ids="%(ids)s">'
+                '<p>Entre el 20 y el 23 de septiembre los avisos del Centro de Actividades '
+                'estuvieron apagados. Tienes <b>%(n)s</b> actividad(es) pendiente(s) que se te '
+                'asignaron en ese lapso:</p><ul>%(items)s</ul>%(more)s'
+                '<p><a href="%(hub)s" style="display:inline-block;padding:8px 14px;background:#0b57d0;'
+                'color:#fff;border-radius:6px;text-decoration:none;font-weight:600">'
+                'Abrir el Centro de Actividades</a></p></div>') % {
+                    'ids': ','.join('[%s]' % a.id for a in user_acts),
+                    'n': len(user_acts),
+                    'items': Markup('').join(items),
+                    'more': Markup('<p>… y %s más en el Centro.</p>') % more if more > 0 else Markup(''),
+                    'hub': hub_url,
+                }
+            partner.with_user(SUPERUSER_ID).message_notify(
+                partner_ids=partner.ids,
+                body=body,
+                subject=_('%s actividad(es) pendiente(s) sin aviso en el Centro de Actividades') % len(user_acts),
+                email_layout_xmlid='mail.mail_notification_layout',
+                model_description=_('Centro de Actividades'),
+            )
+            result[user.id] = len(user_acts)
+            _logger.info('[SOM HUB] puesta al día: %s → %s actividad(es)', user.name, len(user_acts))
+        return result
 
     # ------------------------------------------------------------------
     # RPC

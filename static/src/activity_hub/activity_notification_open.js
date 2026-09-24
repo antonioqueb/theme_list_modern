@@ -10,11 +10,16 @@ import { patch } from "@web/core/utils/patch";
 import { MessagingMenu } from "@mail/core/public_web/messaging_menu";
 
 const RE_ACTIVITY = /data-som-activity-id="(\d+)"/;
+const RE_HUB = /data-som-activity-hub="1"/;
 
+/** id de actividad (aviso individual), -1 si es un resumen (abre el Centro sin resaltar), 0 si no es aviso SOM. */
 function somActivityIdOf(message) {
     const body = message && message.body ? String(message.body) : "";
     const m = body.match(RE_ACTIVITY);
-    return m ? Number(m[1]) : 0;
+    if (m) {
+        return Number(m[1]);
+    }
+    return RE_HUB.test(body) ? -1 : 0;
 }
 
 patch(MessagingMenu.prototype, {
@@ -31,7 +36,7 @@ patch(MessagingMenu.prototype, {
             type: "ir.actions.client",
             tag: "theme_list_modern.activity_hub",
             name: "Actividades",
-            params: { som_activity_id: activityId },
+            params: activityId > 0 ? { som_activity_id: activityId } : {},
         });
     },
     onClickThread(isMarkAsRead, thread, message) {
