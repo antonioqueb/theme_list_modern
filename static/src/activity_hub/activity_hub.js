@@ -50,6 +50,8 @@ export class SomActivityHub extends Component {
             busy: {},
             historyLimit: 40,
             focusId: 0,
+            rejectFor: null,
+            rejectText: "",
         });
         // Abierto desde un aviso (systray, bandeja o correo): la actividad
         // llega en params (URL ?som_activity_id=) o en el contexto (doAction).
@@ -265,6 +267,52 @@ export class SomActivityHub extends Component {
             views: [[false, "form"]],
             target: "current",
         });
+    }
+
+    /** Autorizaciones: abre la SOLICITUD (no la orden); lo demás, su documento. */
+    openActivity(activity) {
+        if (activity.auth) {
+            this.openRecord(activity.auth.model, activity.auth.id);
+        } else {
+            this.openRecord(activity.res_model, activity.res_id);
+        }
+    }
+
+    toggleReject(activity) {
+        this.state.rejectFor = this.state.rejectFor === activity.id ? null : activity.id;
+        this.state.rejectText = "";
+    }
+
+    onRejectInput(ev) {
+        this.state.rejectText = ev.target.value;
+    }
+
+    async decide(activity, decision) {
+        if (this.state.busy[activity.id]) {
+            return;
+        }
+        const note = decision === "reject" ? this.state.rejectText.trim() : "";
+        if (decision === "reject" && activity.auth.reject_needs_reason && !note) {
+            this.notification.add("Escribe el motivo del rechazo.", { type: "warning" });
+            return;
+        }
+        this.state.busy[activity.id] = true;
+        try {
+            await this.orm.call("som.activity.hub", "decide_authorization", [activity.id, decision, note]);
+            this.notification.add(
+                `${activity.auth.name}: ${decision === "approve" ? "aprobada" : "rechazada"}.`,
+                { type: decision === "approve" ? "success" : "warning" }
+            );
+            this.state.rejectFor = null;
+            this.state.rejectText = "";
+            await this.load();
+        } catch (e) {
+            console.error("[SOM ACTIVITY HUB] no se pudo decidir la autorización", e);
+            const msg = (e && e.data && e.data.message) || "No se pudo registrar la decisión.";
+            this.notification.add(msg, { type: "danger" });
+        } finally {
+            delete this.state.busy[activity.id];
+        }
     }
 
     toggleFeedback(activity) {

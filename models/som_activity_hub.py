@@ -634,6 +634,8 @@ class SomActivityHub(models.AbstractModel):
             'closed_by': act.write_uid.name if (not act.active and act.write_uid) else '',
             'co_assignees': [],
         }
+        if with_siblings and act.active:
+            payload['auth'] = self._som_auth_payload(act)
         if with_siblings and kind and kind.shared and act.res_model and act.res_id:
             others = self.env['mail.activity'].sudo().search([
                 ('id', '!=', act.id),
@@ -644,6 +646,172 @@ class SomActivityHub(models.AbstractModel):
             ])
             payload['co_assignees'] = sorted({u.name for u in others.user_id if u.name})
         return payload
+
+    # ------------------------------------------------------------------
+    # Autorizaciones desde el Centro (25 sep 2026): "Abrir" lleva a la
+    # SOLICITUD (no a la orden), la tarjeta muestra sus datos y trae
+    # Aprobar / Rechazar. Las decisiones corren con los permisos del
+    # usuario: cada método de origen valida su grupo de autorizador.
+    # ------------------------------------------------------------------
+    AUTH_KINDS = ('price_auth', 'discount_auth', 'iva_auth', 'delivery_auth')
+
+    @api.model
+    def _som_auth_target(self, act):
+        """(tipo, registro) de la solicitud que la actividad pide decidir, o
+        (False, None). Las solicitudes de precio viejas colgaban de la
+        orden: se sigue a su autorización ligada."""
+        key = act.x_som_kind_id.key
+        if key not in self.AUTH_KINDS or not act.res_model or not act.res_id \
+                or act.res_model not in self.env:
+            return False, None
+        rec = self.env[act.res_model].sudo().browse(act.res_id).exists()
+        if not rec:
+            return False, None
+        if key == 'price_auth':
+            if rec._name == 'sale.order':
+                rec = rec.x_price_authorization_id if 'x_price_authorization_id' in rec._fields else None
+            if not rec or rec._name != 'price.authorization':
+                return False, None
+            return 'price', rec
+        if key in ('discount_auth', 'iva_auth') and rec._name == 'sale.order':
+            return ('discount' if key == 'discount_auth' else 'iva'), rec
+        if key == 'delivery_auth' and rec._name == 'delivery.auth.request':
+            return 'delivery', rec
+        return False, None
+
+    @api.model
+    def _som_money(self, amount, currency_name):
+        return '$ {:,.2f} {}'.format(amount or 0.0, currency_name or '').strip()
+
+    @api.model
+    def _som_auth_payload(self, act):
+        """Datos de la solicitud para pintarla en la tarjeta."""
+        try:
+            atype, rec = self._som_auth_target(act)
+            if not atype:
+                return False
+            state_field = rec._fields.get('state')
+            state_label = ''
+            if state_field and state_field.type == 'selection':
+                state_label = dict(state_field._description_selection(self.env)).get(rec.state, rec.state or '')
+            out = {
+                'type': atype, 'model': rec._name, 'id': rec.id,
+                'name': rec.display_name or '', 'state_label': state_label,
+                'pending': False, 'fields': [], 'lines': [], 'line_cols': [],
+                'total': '', 'reject_needs_reason': atype == 'delivery',
+            }
+            F = out['fields']
+            if atype == 'price':
+                data = rec.with_env(self.env).get_review_data()
+                cur = data.get('currency') or ''
+                out['pending'] = rec.state == 'pending'
+                F += [('Cliente', data.get('partner')), ('Proyecto', data.get('project')),
+                      ('Vendedor', data.get('seller')), ('Operación', data.get('operation_label')),
+                      ('Orden', rec.x_linked_order_id.name if 'x_linked_order_id' in rec._fields and rec.x_linked_order_id else ''),
+                      ('Divisa', cur), ('Justificación', data.get('notes'))]
+                out['line_cols'] = ['Producto', 'Cantidad', 'Solicitado', 'P2', 'P3', 'Autorizado', 'Subtotal']
+                for ln in data.get('lines') or []:
+                    out['lines'].append([
+                        ln.get('product'),
+                        '{:,.2f} {}'.format(ln.get('quantity') or 0.0, ln.get('uom') or ''),
+                        self._som_money(ln.get('requested_price'), ''),
+                        self._som_money(ln.get('price_2'), '') if 'price_2' in ln else '',
+                        self._som_money(ln.get('price_3'), '') if 'price_3' in ln else '',
+                        self._som_money(ln.get('authorized_price') or ln.get('requested_price'), ''),
+                        self._som_money(ln.get('subtotal'), ''),
+                    ])
+                totals = data.get('totals') or {}
+                out['total'] = self._som_money(totals.get('authorized'), cur)
+            elif atype in ('discount', 'iva'):
+                cur = rec.currency_id.name or ''
+                F += [('Orden', rec.name), ('Cliente', rec.partner_id.display_name),
+                      ('Vendedor', rec.user_id.name), ('Total', self._som_money(rec.amount_total, cur))]
+                if atype == 'discount':
+                    out['pending'] = bool(getattr(rec, 'x_discount_auth_requested', False))
+                    F.append(('Descuento (MXN)', self._som_money(getattr(rec, 'x_discount_amount_mxn', 0.0), 'MXN')))
+                    out['line_cols'] = ['Producto', 'Cantidad', 'Precio', 'Descuento solicitado']
+                    for ln in rec.order_line.filtered(
+                            lambda l: (getattr(l, 'x_requested_discount', 0.0) or l.discount or 0.0) > 0):
+                        out['lines'].append([
+                            ln.product_id.display_name or ln.name,
+                            '{:,.2f}'.format(ln.product_uom_qty or 0.0),
+                            self._som_money(ln.price_unit, ''),
+                            '{:.2f} %'.format(getattr(ln, 'x_requested_discount', 0.0) or ln.discount or 0.0),
+                        ])
+                else:
+                    out['pending'] = getattr(rec, 'x_iva_exempt_state', '') == 'requested'
+                    F.append(('IVA a retirar', self._som_money(rec.amount_tax, cur)))
+                out['state_label'] = ''
+            elif atype == 'delivery':
+                cur = rec.currency_id.name or ''
+                out['pending'] = rec.state == 'requested'
+                F += [('Orden', rec.sale_order_id.name), ('Cliente', rec.partner_id.display_name),
+                      ('Vendedor', rec.salesperson_id.name), ('Solicitó', rec.requested_by_id.name),
+                      ('Total', self._som_money(rec.amount_total, cur)),
+                      ('Saldo pendiente', self._som_money(rec.amount_residual, cur))]
+            out['fields'] = [{'label': k, 'value': v} for k, v in F if v]
+            return out
+        except Exception:  # noqa: BLE001 — jamás tumbar el hub por una solicitud rara
+            _logger.exception('[som_activity_hub] sin datos de autorización para la actividad %s', act.id)
+            return False
+
+    @api.model
+    def decide_authorization(self, activity_id, decision, note=None):
+        """Aprobar / rechazar desde el Centro. Corre como el usuario: el
+        método de origen valida que sea autorizador."""
+        act = self.env['mail.activity'].browse(int(activity_id)).exists()
+        if not act or act.user_id != self.env.user:
+            raise AccessError(_('Solo puedes decidir autorizaciones asignadas a ti.'))
+        if decision not in ('approve', 'reject'):
+            raise UserError(_('Decisión no válida.'))
+        note = (note or '').strip()
+        atype, rec = self._som_auth_target(act)
+        if not atype:
+            raise UserError(_('Esta actividad no es una autorización que se pueda decidir aquí.'))
+        info = self._som_auth_payload(act) or {}
+        if not info.get('pending'):
+            raise UserError(_('La solicitud %s ya se resolvió (%s).') % (
+                rec.display_name, info.get('state_label') or _('sin pendiente')))
+        rec = rec.with_env(self.env)  # sin sudo: permisos del usuario
+        approve = decision == 'approve'
+        if atype == 'price':
+            if note:
+                rec.authorization_notes = note
+            if approve:
+                rec.action_approve()
+            else:
+                rec.action_reject()
+        elif atype == 'discount':
+            if approve:
+                rec.action_authorize_discount()
+            else:
+                rec.action_reject_discount()
+        elif atype == 'iva':
+            if approve:
+                rec.action_approve_iva_exemption()
+            else:
+                rec.action_reject_iva_exemption()
+        elif atype == 'delivery':
+            if approve:
+                rec.action_approve()
+            else:
+                if not note:
+                    raise UserError(_('Indica el motivo del rechazo de la entrega.'))
+                rec._check_approver_rights()
+                self.env['delivery.auth.reject.wizard'].create({
+                    'request_id': rec.id, 'rejection_notes': note,
+                }).action_confirm_reject()
+        if note and atype in ('discount', 'iva', 'delivery') and (approve or atype != 'delivery'):
+            rec.message_post(body=Markup('<p><b>Comentario de %s:</b> %s</p>') % (
+                self.env.user.name, note))
+        # Si el flujo de origen no cerró la actividad, se cierra aquí (la
+        # compartida arrastra a los demás autorizadores).
+        act.invalidate_recordset(['active'])
+        if act.exists() and act.active:
+            act.action_feedback(feedback=_('%s desde el Centro por %s%s') % (
+                _('Aprobada') if approve else _('Rechazada'), self.env.user.name,
+                (': %s' % note) if note else ''))
+        return {'decision': decision, 'name': rec.display_name}
 
     # ------------------------------------------------------------------
     # Puesta al día de avisos (23 sep 2026)
