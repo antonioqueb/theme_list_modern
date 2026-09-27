@@ -221,6 +221,7 @@
     &-group { margin-bottom: 22px; }
     &-group-head {
         display: flex;
+        flex-wrap: wrap;
         align-items: center;
         gap: 10px;
         margin-bottom: 10px;
@@ -249,31 +250,77 @@
         padding: 2px 8px;
     }
 
-    // ─── Tarjetas ───
+    // ─── Tarjetas: filas horizontales de ancho completo ───
+    // Tres zonas: identidad (qué/quién/cuándo) · contenido · acciones.
+    // Debajo de 1100px las acciones bajan a una franja; en móvil todo apila.
     &-cards {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+        display: flex;
+        flex-direction: column;
         gap: 12px;
     }
     &-card {
+        position: relative;
+        display: grid;
+        grid-template-columns: 280px minmax(0, 1fr) 150px;
         background: var(--som-card);
         border: 1px solid var(--som-line);
-        border-left: 4px solid var(--kind-color);
         border-radius: 14px;
-        padding: 14px 16px;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
+        overflow: hidden;
         box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
-        transition: box-shadow 0.15s ease, transform 0.15s ease;
-        &:hover { box-shadow: 0 8px 22px rgba(16, 24, 40, 0.08); transform: translateY(-1px); }
-        &-overdue { background: #fffaf9; }
+        transition: box-shadow 0.15s ease, border-color 0.15s ease;
+        &::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: var(--kind-color);
+        }
+        &:hover { box-shadow: 0 6px 18px rgba(16, 24, 40, 0.07); border-color: #d6dbe4; }
+        &-overdue { border-color: #f5c6c2; .som-hub-card-id { background: #fff6f5; } }
         &-closed { opacity: 0.8; }
-        &-main { display: flex; flex-direction: column; gap: 8px; }
-        &-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
-        &-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+        // Izquierda: identidad
+        &-id {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 16px 18px 16px 22px;
+            background: #fafbfd;
+            border-right: 1px solid var(--som-line);
+            min-width: 0;
+            .som-hub-meta { flex-direction: column; gap: 4px; }
+            .som-hub-record { max-width: 100%; }
+        }
+        // Centro: contenido
+        &-body {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 16px 20px;
+            min-width: 0;
+        }
+        // Derecha: acciones apiladas
+        &-actions {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            gap: 8px;
+            padding: 16px;
+            border-left: 1px solid var(--som-line);
+            .btn { width: 100%; justify-content: center; white-space: nowrap; }
+        }
+
+        // Mis solicitudes: más compacta (sin datos de autorización)
+        &-request {
+            grid-template-columns: 220px minmax(0, 1fr) auto;
+            .som-hub-card-id { justify-content: center; }
+            .som-hub-card-actions { border-left: 0; align-items: flex-end; }
+        }
     }
-    &-summary { font-weight: 700; font-size: 15px; line-height: 1.3; }
+    &-summary { font-weight: 700; font-size: 15px; line-height: 1.35; color: var(--som-ink); word-break: break-word; }
     &-state {
         font-size: 12px;
         font-weight: 600;
@@ -303,7 +350,18 @@
         &-state { font-size: 11px; background: #fff; border: 1px solid var(--som-line); border-radius: 999px; padding: 1px 7px; color: var(--som-muted); }
         &-inline { background: transparent; padding: 0; margin-left: 6px; &:hover { text-decoration: underline; background: transparent; } }
     }
-    &-note { color: #374151; line-height: 1.45; }
+    &-note { color: #374151; line-height: 1.5; white-space: pre-line; }
+    &-linkbtn {
+        border: 0;
+        background: transparent;
+        padding: 0;
+        color: var(--som-blue);
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        &:hover { text-decoration: underline; }
+        .fa { margin-right: 4px; font-size: 11px; }
+    }
     &-quote { border-left: 3px solid var(--som-line); padding-left: 10px; font-style: italic; color: var(--som-muted); }
     &-quote-inline { font-style: italic; color: var(--som-muted); }
     &-meta {
@@ -415,12 +473,37 @@
         &.disabled { opacity: 0.45; }
     }
 
-    // ─── Móvil ───
-    @media (max-width: 640px) {
+    // ─── Pantallas medianas y móvil ───
+    @media (max-width: 1100px) {
+        &-card {
+            grid-template-columns: 240px minmax(0, 1fr);
+            &-actions {
+                grid-column: 1 / -1;
+                flex-direction: row;
+                justify-content: flex-end;
+                border-left: 0;
+                border-top: 1px solid var(--som-line);
+                padding: 10px 16px;
+                .btn { width: auto; }
+            }
+            &-request { grid-template-columns: 200px minmax(0, 1fr); }
+        }
+    }
+    @media (max-width: 720px) {
         &-scroll { padding: 14px 12px 40px; }
-        &-cards, &-prefs { grid-template-columns: 1fr; }
+        &-prefs { grid-template-columns: 1fr; }
         &-row { grid-template-columns: 1fr; gap: 4px; }
-        &-card-actions { justify-content: stretch; .btn { flex: 1; } }
+        .som-hub-auth-table { th:first-child, td:first-child { min-width: 160px; } }
+        &-card {
+            grid-template-columns: minmax(0, 1fr);
+            &-id {
+                border-right: 0;
+                border-bottom: 1px solid var(--som-line);
+                .som-hub-meta { flex-direction: row; gap: 4px 12px; }
+            }
+            &-actions .btn { flex: 1; }
+            &-request { grid-template-columns: minmax(0, 1fr); }
+        }
     }
 }
 
@@ -434,38 +517,81 @@
     50% { box-shadow: 0 0 0 8px rgba(11, 87, 208, 0.18); }
 }
 
-// Autorizaciones: datos de la solicitud dentro de la tarjeta.
+// Autorizaciones: datos de la solicitud en el centro de la tarjeta.
 .som-hub-auth {
-    margin-top: 8px;
-    padding: 10px 12px;
-    border-radius: 8px;
-    background: #f6f8fc;
-    border: 1px solid #e5e7eb;
-    font-size: 13px;
-
+    // Franja de datos cortos: etiqueta arriba, valor abajo, en columnas.
     &-fields {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-        gap: 6px 14px;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 12px 20px;
     }
-    &-field { display: flex; flex-direction: column; }
+    &-field { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
     &-label {
         font-size: 11px;
+        font-weight: 600;
         text-transform: uppercase;
-        letter-spacing: 0.04em;
+        letter-spacing: 0.05em;
         color: #6b7280;
     }
-    &-value { color: #1f2937; font-weight: 500; word-break: break-word; }
+    &-value {
+        color: #1f2937;
+        font-weight: 600;
+        font-size: 14px;
+        line-height: 1.35;
+        word-break: break-word;
+        // Hasta 2 renglones; el valor completo va en el title.
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    // Texto largo (justificación): renglón propio, como cita.
+    &-long {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        .som-hub-quote { font-style: normal; color: #374151; line-height: 1.5; white-space: pre-line; }
+    }
 
-    &-table-wrap { margin-top: 8px; overflow-x: auto; }
+    &-table-wrap {
+        overflow-x: auto;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+    }
     &-table {
         width: 100%;
         border-collapse: collapse;
-        font-size: 12px;
-        th, td { padding: 4px 6px; border-bottom: 1px solid #e5e7eb; text-align: right; white-space: nowrap; }
-        th:first-child, td:first-child { text-align: left; white-space: normal; }
-        th { color: #6b7280; font-weight: 600; }
+        font-size: 13px;
+        th, td { padding: 7px 12px; text-align: right; white-space: nowrap; }
+        th:first-child, td:first-child { text-align: left; white-space: normal; min-width: 220px; }
+        thead th {
+            background: #f6f8fc;
+            color: #6b7280;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        tbody tr + tr td { border-top: 1px solid #f0f2f5; }
+        tbody td { font-variant-numeric: tabular-nums; color: #1f2937; }
+        // Última columna (subtotal / descuento) resaltada.
+        td:last-child { font-weight: 600; }
     }
-    &-total { margin-top: 6px; text-align: right; }
-    .som-hub-feedback { margin-top: 8px; }
+    &-foot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 6px 12px;
+        min-height: 20px;
+        .som-hub-linkbtn { white-space: nowrap; }
+    }
+    &-total {
+        margin-left: auto;
+        white-space: nowrap;
+        font-size: 14px;
+        color: #6b7280;
+        b { color: #083b8f; font-size: 16px; font-weight: 700; margin-left: 6px; font-variant-numeric: tabular-nums; }
+    }
 }

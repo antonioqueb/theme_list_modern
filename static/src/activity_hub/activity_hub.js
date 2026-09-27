@@ -14,6 +14,11 @@ import { useService } from "@web/core/utils/hooks";
 
 const MONTHS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 const REFRESH_DEBOUNCE_MS = 900;
+// Tarjeta de autorización: estos datos son texto largo y van en su propio
+// renglón (cita), no en la franja de datos cortos.
+const LONG_FIELDS = ["Justificación"];
+// Renglones de la tabla de productos visibles antes de "Ver N más".
+const LINES_PREVIEW = 4;
 
 export function somFmtDate(iso) {
     if (!iso) {
@@ -52,6 +57,7 @@ export class SomActivityHub extends Component {
             focusId: 0,
             rejectFor: null,
             rejectText: "",
+            expanded: {},
         });
         // Abierto desde un aviso (systray, bandeja o correo): la actividad
         // llega en params (URL ?som_activity_id=) o en el contexto (doAction).
@@ -237,6 +243,35 @@ export class SomActivityHub extends Component {
             return "Vence hoy";
         }
         return `Vence ${this.fmtDate(a.deadline)}`;
+    }
+
+    // ------------------------------------------------------------------
+    // Tarjeta horizontal: datos cortos en la franja, textos largos aparte
+    // ------------------------------------------------------------------
+    authFields(a) {
+        return (a.auth.fields || []).filter((f) => !LONG_FIELDS.includes(f.label));
+    }
+
+    authLongFields(a) {
+        return (a.auth.fields || []).filter((f) => LONG_FIELDS.includes(f.label));
+    }
+
+    authLines(a) {
+        const lines = a.auth.lines || [];
+        return this.state.expanded[a.id] ? lines : lines.slice(0, LINES_PREVIEW);
+    }
+
+    hiddenLinesCount(a) {
+        const n = (a.auth.lines || []).length - LINES_PREVIEW;
+        return this.state.expanded[a.id] || n <= 0 ? 0 : n;
+    }
+
+    hasMoreLines(a) {
+        return (a.auth.lines || []).length > LINES_PREVIEW;
+    }
+
+    toggleLines(a) {
+        this.state.expanded[a.id] = !this.state.expanded[a.id];
     }
 
     // ------------------------------------------------------------------

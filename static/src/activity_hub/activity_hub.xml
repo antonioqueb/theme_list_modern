@@ -99,17 +99,16 @@
 
                             <div class="som-hub-cards">
                                 <t t-foreach="group.items" t-as="a" t-key="a.id">
-                                    <div class="som-hub-card" t-att-class="{ 'som-hub-card-overdue': a.state === 'overdue', 'som-hub-card-focus': state.focusId === a.id }"
+                                    <div class="som-hub-card" t-att-class="{ 'som-hub-card-overdue': a.state === 'overdue', 'som-hub-card-focus': state.focusId === a.id, 'som-hub-card-auth': a.auth }"
                                          t-att-id="'som-act-' + a.id"
                                          t-att-style="'--kind-color:' + (a.kind ? a.kind.color : '#0b57d0')">
-                                        <div class="som-hub-card-main">
-                                            <div class="som-hub-card-top">
-                                                <span class="som-hub-summary" t-esc="a.summary"/>
-                                                <span class="som-hub-state" t-att-class="'som-hub-state-' + a.state" t-esc="stateLabel(a)"/>
-                                            </div>
+
+                                        <!-- ── Izquierda: qué es, de quién y cuándo ── -->
+                                        <div class="som-hub-card-id">
+                                            <span class="som-hub-state" t-att-class="'som-hub-state-' + a.state" t-esc="stateLabel(a)"/>
+                                            <div class="som-hub-summary" t-esc="a.summary"/>
                                             <button t-if="a.auth" class="som-hub-record" t-on-click="() => this.openActivity(a)" title="Abrir la solicitud">
                                                 <i class="fa fa-external-link" title=""/>
-                                                <span class="som-hub-record-model">Solicitud</span>
                                                 <span class="som-hub-record-name" t-esc="a.auth.name"/>
                                                 <span t-if="a.auth.state_label" class="som-hub-record-state" t-esc="a.auth.state_label"/>
                                             </button>
@@ -119,16 +118,38 @@
                                                 <span class="som-hub-record-name" t-esc="a.res_name"/>
                                                 <span t-if="a.res_state" class="som-hub-record-state" t-esc="a.res_state"/>
                                             </button>
-                                            <!-- Datos de la autorización (sin abrir el documento) -->
-                                            <div t-if="a.auth" class="som-hub-auth">
-                                                <div class="som-hub-auth-fields">
-                                                    <t t-foreach="a.auth.fields" t-as="f" t-key="f.label">
+                                            <div class="som-hub-meta">
+                                                <span><i class="fa fa-user-o" title="Solicitó"/> <t t-esc="a.requester"/></span>
+                                                <span><i class="fa fa-clock-o" title="Creada"/> <t t-esc="fmtDate(a.created_at)"/> · <t t-esc="daysLabel(a.days_open)"/></span>
+                                                <span t-if="a.co_assignees.length" class="som-hub-co">
+                                                    <i class="fa fa-users" title="También asignada a"/> también: <t t-esc="a.co_assignees.join(', ')"/>
+                                                </span>
+                                                <span t-if="a.kind and a.kind.notice" class="som-hub-auto" title="Aviso informativo">
+                                                    <i class="fa fa-info-circle" title=""/> se archiva solo a los <t t-esc="a.kind.notice_days"/> días
+                                                </span>
+                                                <span t-elif="a.kind and a.kind.auto" class="som-hub-auto" title="Se cierra sola cuando el documento se resuelve">
+                                                    <i class="fa fa-magic" title=""/> se cierra sola al resolverse
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <!-- ── Centro: el contenido ── -->
+                                        <div class="som-hub-card-body">
+                                            <t t-if="a.auth">
+                                                <div t-if="authFields(a).length" class="som-hub-auth-fields">
+                                                    <t t-foreach="authFields(a)" t-as="f" t-key="f.label">
                                                         <div class="som-hub-auth-field">
                                                             <span class="som-hub-auth-label" t-esc="f.label"/>
-                                                            <span class="som-hub-auth-value" t-esc="f.value"/>
+                                                            <span class="som-hub-auth-value" t-att-title="f.value" t-esc="f.value"/>
                                                         </div>
                                                     </t>
                                                 </div>
+                                                <t t-foreach="authLongFields(a)" t-as="f" t-key="f.label">
+                                                    <div class="som-hub-auth-long">
+                                                        <span class="som-hub-auth-label" t-esc="f.label"/>
+                                                        <div class="som-hub-quote" t-esc="f.value"/>
+                                                    </div>
+                                                </t>
                                                 <div t-if="a.auth.lines.length" class="som-hub-auth-table-wrap">
                                                     <table class="som-hub-auth-table">
                                                         <thead><tr>
@@ -137,7 +158,7 @@
                                                             </t>
                                                         </tr></thead>
                                                         <tbody>
-                                                            <t t-foreach="a.auth.lines" t-as="row" t-key="row_index">
+                                                            <t t-foreach="authLines(a)" t-as="row" t-key="row_index">
                                                                 <tr>
                                                                     <t t-foreach="row" t-as="cell" t-key="cell_index">
                                                                         <td t-esc="cell"/>
@@ -147,7 +168,13 @@
                                                         </tbody>
                                                     </table>
                                                 </div>
-                                                <div t-if="a.auth.total" class="som-hub-auth-total">Total: <b t-esc="a.auth.total"/></div>
+                                                <div t-if="a.auth.lines.length or a.auth.total" class="som-hub-auth-foot">
+                                                    <button t-if="hasMoreLines(a)" class="som-hub-linkbtn" t-on-click="() => this.toggleLines(a)">
+                                                        <t t-if="hiddenLinesCount(a)"><i class="fa fa-chevron-down" title=""/> Ver <t t-esc="hiddenLinesCount(a)"/> producto<t t-if="hiddenLinesCount(a) !== 1">s</t> más</t>
+                                                        <t t-else=""><i class="fa fa-chevron-up" title=""/> Ver menos</t>
+                                                    </button>
+                                                    <span t-if="a.auth.total" class="som-hub-auth-total">Total <b t-esc="a.auth.total"/></span>
+                                                </div>
                                                 <div t-if="!a.auth.pending" class="som-hub-muted">
                                                     <i class="fa fa-info-circle" title=""/> Esta solicitud ya no está pendiente<t t-if="a.auth.state_label"> (<t t-esc="a.auth.state_label"/>)</t>.
                                                 </div>
@@ -159,21 +186,9 @@
                                                     </button>
                                                     <button class="btn btn-link btn-sm" t-on-click="() => this.toggleReject(a)">Cancelar</button>
                                                 </div>
-                                            </div>
-                                            <div t-if="a.note and !a.auth" class="som-hub-note" t-esc="a.note"/>
-                                            <div class="som-hub-meta">
-                                                <span><i class="fa fa-user-o" title="Solicitó"/> <t t-esc="a.requester"/></span>
-                                                <span><i class="fa fa-clock-o" title="Creada"/> <t t-esc="fmtDate(a.created_at)"/> · <t t-esc="daysLabel(a.days_open)"/></span>
-                                                <span t-if="a.co_assignees.length" class="som-hub-co">
-                                                    <i class="fa fa-users" title="También asignada a"/> también: <t t-esc="a.co_assignees.join(', ')"/>
-                                                </span>
-                                                <span t-if="a.kind and a.kind.notice" class="som-hub-auto" title="Aviso informativo">
-                                                    <i class="fa fa-info-circle" title=""/> aviso · se archiva solo a los <t t-esc="a.kind.notice_days"/> días
-                                                </span>
-                                                <span t-elif="a.kind and a.kind.auto" class="som-hub-auto" title="Se cierra sola cuando el documento se resuelve">
-                                                    <i class="fa fa-magic" title=""/> se cierra sola al resolverse
-                                                </span>
-                                            </div>
+                                            </t>
+                                            <div t-elif="a.note" class="som-hub-note" t-esc="a.note"/>
+                                            <div t-else="" class="som-hub-muted">Sin detalle adicional.</div>
                                             <div t-if="state.feedbackFor === a.id" class="som-hub-feedback">
                                                 <input type="text" placeholder="Comentario (opcional)…" t-att-value="state.feedbackText" t-on-input="onFeedbackInput"/>
                                                 <button class="btn btn-primary btn-sm" t-att-disabled="state.busy[a.id]" t-on-click="() => this.markDone(a, true)">
@@ -182,6 +197,9 @@
                                                 <button class="btn btn-link btn-sm" t-on-click="() => this.toggleFeedback(a)">Cancelar</button>
                                             </div>
                                         </div>
+
+                                        <!-- ── Derecha: acciones ── -->
+                                        <!-- Autorización pendiente: se resuelve con Aprobar/Rechazar, no con "Atendida". -->
                                         <div class="som-hub-card-actions">
                                             <t t-if="a.auth and a.auth.pending">
                                                 <button class="btn btn-success btn-sm" t-att-disabled="state.busy[a.id]" t-on-click="() => this.decide(a, 'approve')">
@@ -191,16 +209,18 @@
                                                     <i class="fa fa-times" title=""/> Rechazar
                                                 </button>
                                             </t>
-                                            <button t-if="a.auth or (a.res_model and a.res_id)" class="btn btn-primary btn-sm" t-on-click="() => this.openActivity(a)">
+                                            <t t-elif="a.kind and a.kind.notice">
+                                                <button class="btn btn-outline-primary btn-sm" t-att-disabled="state.busy[a.id]" t-on-click="() => this.markDone(a, false)">
+                                                    <i class="fa fa-check" title=""/> Enterado
+                                                </button>
+                                            </t>
+                                            <t t-else="">
+                                                <button class="btn btn-outline-primary btn-sm" t-att-disabled="state.busy[a.id]" t-on-click="() => this.toggleFeedback(a)">
+                                                    <i class="fa fa-check" title=""/> Atendida
+                                                </button>
+                                            </t>
+                                            <button t-if="a.auth or (a.res_model and a.res_id)" class="btn btn-light btn-sm" t-on-click="() => this.openActivity(a)">
                                                 <i class="fa fa-folder-open-o" title=""/> Abrir
-                                            </button>
-                                            <!-- Autorización pendiente: se resuelve con Aprobar/Rechazar, no con "Atendida". -->
-                                            <t t-if="a.auth and a.auth.pending"/>
-                                            <button t-elif="a.kind and a.kind.notice" class="btn btn-outline-primary btn-sm" t-att-disabled="state.busy[a.id]" t-on-click="() => this.markDone(a, false)">
-                                                <i class="fa fa-check" title=""/> Enterado
-                                            </button>
-                                            <button t-else="" class="btn btn-outline-primary btn-sm" t-att-disabled="state.busy[a.id]" t-on-click="() => this.toggleFeedback(a)">
-                                                <i class="fa fa-check" title=""/> Atendida
                                             </button>
                                         </div>
                                     </div>
@@ -223,20 +243,15 @@
                         <t t-foreach="filteredRequests" t-as="r" t-key="r.key">
                             <div class="som-hub-card som-hub-card-request" t-att-class="{ 'som-hub-card-closed': r.status !== 'open' }"
                                  t-att-style="'--kind-color:' + (r.kind ? r.kind.color : '#0b57d0')">
-                                <div class="som-hub-card-main">
-                                    <div class="som-hub-card-top">
-                                        <span class="som-hub-kind-tag" t-if="r.kind">
-                                            <i t-att-class="'fa ' + r.kind.icon" title=""/> <t t-esc="r.kind.name"/>
-                                        </span>
-                                        <span class="som-hub-summary" t-esc="r.summary"/>
-                                        <span t-if="r.status === 'open'" class="som-hub-state som-hub-state-today">En espera</span>
-                                        <span t-else="" class="som-hub-state som-hub-state-done">Atendida</span>
-                                    </div>
-                                    <button t-if="r.res_model and r.res_id" class="som-hub-record" t-on-click="() => this.openRecord(r.res_model, r.res_id)" title="Abrir el documento">
-                                        <i class="fa fa-external-link" title=""/>
-                                        <span class="som-hub-record-name" t-esc="r.res_name"/>
-                                        <span t-if="r.res_state" class="som-hub-record-state" t-esc="r.res_state"/>
-                                    </button>
+                                <div class="som-hub-card-id">
+                                    <span t-if="r.status === 'open'" class="som-hub-state som-hub-state-today">En espera</span>
+                                    <span t-else="" class="som-hub-state som-hub-state-done">Atendida</span>
+                                    <span class="som-hub-kind-tag" t-if="r.kind">
+                                        <i t-att-class="'fa ' + r.kind.icon" title=""/> <t t-esc="r.kind.name"/>
+                                    </span>
+                                </div>
+                                <div class="som-hub-card-body">
+                                    <div class="som-hub-summary" t-esc="r.summary"/>
                                     <div class="som-hub-meta">
                                         <span><i class="fa fa-clock-o" title="Creada"/> <t t-esc="fmtDate(r.created_at)"/> · <t t-esc="daysLabel(r.days_open)"/></span>
                                         <span t-if="r.status === 'open'" class="som-hub-co">
@@ -248,6 +263,13 @@
                                         </span>
                                     </div>
                                     <div t-if="r.feedback" class="som-hub-note som-hub-quote" t-esc="r.feedback"/>
+                                </div>
+                                <div class="som-hub-card-actions">
+                                    <button t-if="r.res_model and r.res_id" class="som-hub-record" t-on-click="() => this.openRecord(r.res_model, r.res_id)" title="Abrir el documento">
+                                        <i class="fa fa-external-link" title=""/>
+                                        <span class="som-hub-record-name" t-esc="r.res_name"/>
+                                        <span t-if="r.res_state" class="som-hub-record-state" t-esc="r.res_state"/>
+                                    </button>
                                 </div>
                             </div>
                         </t>
