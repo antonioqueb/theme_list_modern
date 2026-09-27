@@ -336,8 +336,17 @@ class MailActivity(models.Model):
         actividad directamente en el Centro). El cuerpo lleva
         `data-som-activity-id`: el systray lo lee para abrir el Centro con
         la actividad resaltada (activity_notification_open.js) y el enlace
-        hace lo mismo desde el correo o la bandeja."""
+        hace lo mismo desde el correo o la bandeja.
+
+        Autorizaciones (27 sep 2026): el aviso se manda SOBRE LA SOLICITUD
+        (price.authorization, delivery.auth.request, la orden en descuento/
+        IVA/precio bajo) y su enlace abre ese registro, no el Centro. Así el
+        push del celular (OCN/web push abren /odoo/<modelo>/<id> del mensaje),
+        el correo y la bandeja llevan directo a la autorización. El
+        sanitizador de Odoo borra los data-*: el systray reconoce el aviso
+        por el `som_activity_id` del enlace."""
         base_url = self.get_base_url()
+        Hub = self.env['som.activity.hub']
         for activity in self.filtered(lambda a: a.user_id and a.res_model and a.res_id):
             act = activity
             if act.user_id.lang:
@@ -345,10 +354,18 @@ class MailActivity(models.Model):
             record = act.env[act.res_model].browse(act.res_id)
             if not record.exists() or not hasattr(record, 'message_notify'):
                 continue
-            model_description = act.env['ir.model']._get(act.res_model).display_name
             kind = act.x_som_kind_id
             kind_name = kind.name if kind else (act.activity_type_id.name or _('Actividad'))
-            url = '%s/odoo/action-theme_list_modern.activity_hub?som_activity_id=%s' % (base_url, act.id)
+            if kind.category == 'auth':
+                target = Hub._som_auth_target(act)[1]
+                if target and hasattr(target, 'message_notify'):
+                    record = target.with_env(act.env)
+                url = '%s/odoo/%s/%s?som_activity_id=%s' % (base_url, record._name, record.id, act.id)
+                button = _('Abrir la autorización')
+            else:
+                url = '%s/odoo/action-theme_list_modern.activity_hub?som_activity_id=%s' % (base_url, act.id)
+                button = _('Abrir en el Centro de Actividades')
+            model_description = act.env['ir.model']._get(record._name).display_name
             deadline = act.date_deadline.strftime(get_lang(act.env).date_format) if act.date_deadline else ''
             note = tools.html2plaintext(act.note or '').strip()
             if len(note) > 300:
@@ -360,7 +377,7 @@ class MailActivity(models.Model):
                 '%(note)s'
                 '<p><a href="%(url)s" style="display:inline-block;padding:8px 14px;'
                 'background:#0b57d0;color:#fff;border-radius:6px;text-decoration:none;'
-                'font-weight:600">Abrir en el Centro de Actividades</a></p>'
+                'font-weight:600">%(button)s</a></p>'
                 '</div>') % {
                     'id': act.id,
                     'kind': kind_name,
@@ -370,6 +387,7 @@ class MailActivity(models.Model):
                     'deadline': (' · ' + _('vence %s') % deadline) if deadline else '',
                     'note': Markup('<p style="color:#555">%s</p>') % note if note else Markup(''),
                     'url': url,
+                    'button': button,
                 }
             record.message_notify(
                 partner_ids=act.user_id.partner_id.ids,
