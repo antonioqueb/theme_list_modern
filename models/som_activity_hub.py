@@ -141,6 +141,9 @@ class SomActivityKind(models.Model):
                     acts -= stale
             closed += self._som_close_orphans(acts)
             acts = acts.filtered('active')
+            if kind.category == 'auth' and acts:
+                closed += self.env['som.activity.hub']._som_close_decided_auth(acts)
+                acts = acts.filtered('active')
             if kind.resolved_domain and acts:
                 closed += self._som_close_resolved(kind, acts)
         if closed:
@@ -698,6 +701,48 @@ class SomActivityHub(models.AbstractModel):
         return False, None
 
     @api.model
+    def _som_auth_is_pending(self, atype, rec):
+        """¿La solicitud sigue esperando decisión? Cualquier otro estado
+        (aprobada, rechazada, expirada, cancelada…) = ya decidida."""
+        if atype == 'price':
+            return rec.state == 'pending'
+        if atype == 'discount':
+            return bool(getattr(rec, 'x_discount_auth_requested', False))
+        if atype == 'iva':
+            return getattr(rec, 'x_iva_exempt_state', '') == 'requested'
+        if atype == 'delivery':
+            return rec.state == 'requested'
+        return True
+
+    @api.model
+    def _som_close_decided_auth(self, acts):
+        """Archiva en silencio las actividades de autorización cuya solicitud
+        ya se decidió, sin importar quién ni desde dónde (formulario, Centro,
+        otro autorizador). Cubre las del flujo viejo colgadas de la orden
+        ("Re-autorizar precios"), que al aprobar la solicitud no se cerraban."""
+        decided = self.env['mail.activity'].sudo()
+        labels = {}
+        for act in acts.sudo().filtered(lambda a: a.active and a.x_som_kind_id.key in self.AUTH_KINDS):
+            try:
+                atype, rec = self._som_auth_target(act)
+                if not atype or self._som_auth_is_pending(atype, rec):
+                    continue
+            except Exception:  # noqa: BLE001 — una solicitud rara no tumba el Centro
+                _logger.exception('[som_activity_hub] no se pudo evaluar la autorización de la actividad %s', act.id)
+                continue
+            decided |= act
+            state_field = rec._fields.get('state')
+            if atype in ('price', 'delivery') and state_field and state_field.type == 'selection':
+                labels[act.id] = dict(state_field._description_selection(self.env)).get(rec.state, rec.state or '')
+        # Como sistema: si no, el Historial diría que la cerró quien solo
+        # abrió el Centro.
+        for act in decided.with_user(SUPERUSER_ID):
+            label = labels.get(act.id)
+            act._som_close_silently(
+                _('La solicitud ya se resolvió (%s).') % label if label else _('La solicitud ya se resolvió.'))
+        return len(decided)
+
+    @api.model
     def _som_money(self, amount, currency_name):
         return '$ {:,.2f} {}'.format(amount or 0.0, currency_name or '').strip()
 
@@ -928,6 +973,10 @@ class SomActivityHub(models.AbstractModel):
         # TODAS las actividades del usuario: las SOM y las manuales.
         base = [('user_id', '=', user.id)]
         pending_all = Activity.search(base + [('active', '=', True)], order='date_deadline asc, id desc')
+        # Autorizaciones ya decididas (por quien sea) no se muestran: se
+        # archivan al momento en vez de esperar al cron.
+        if self._som_close_decided_auth(pending_all):
+            pending_all = pending_all.filtered('active')
         pending = pending_all.filtered(visible)
 
         history = Activity.with_context(active_test=False).search(
