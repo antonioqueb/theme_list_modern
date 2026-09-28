@@ -387,6 +387,13 @@ class MailActivity(models.Model):
                     record = target.with_env(act.env)
                 url = '%s/odoo/%s/%s?som_activity_id=%s' % (base_url, record._name, record.id, act.id)
                 button = _('Abrir la autorización')
+            elif kind.key == 'price_auth_result' and 'x_linked_order_id' in record._fields \
+                    and record.x_linked_order_id:
+                # Resultado de la autorización de precios (27 sep 2026): el
+                # vendedor va directo a SU ORDEN (ya puede confirmarla).
+                record = record.x_linked_order_id.with_env(act.env)
+                url = '%s/odoo/%s/%s?som_activity_id=%s' % (base_url, record._name, record.id, act.id)
+                button = _('Abrir la orden')
             else:
                 url = '%s/odoo/action-theme_list_modern.activity_hub?som_activity_id=%s' % (base_url, act.id)
                 button = _('Abrir en el Centro de Actividades')
