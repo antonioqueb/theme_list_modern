@@ -448,6 +448,11 @@ Autorización Rechazada</field>
         <field name="color">#5a6b7d</field>
         <field name="sequence">10</field>
         <field name="description">Actividades que alguien agenda a mano en un documento (llamada, correo, pendiente…).</field>
+        <!-- No es para vendedores (27 sep 2026): ni en su Centro ni con aviso.
+             Sí la ven quienes además son autorizador, visor del dashboard o
+             administrador. -->
+        <field name="excluded_group_xmlids">inventory_shopping_cart.group_seller</field>
+        <field name="exclusion_bypass_group_xmlids">inventory_shopping_cart.group_price_authorizer,inventory_shopping_cart.group_dashboard_viewer,base.group_system</field>
     </record>
 
 </odoo>

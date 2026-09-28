@@ -91,6 +91,16 @@ class SomActivityKind(models.Model):
         help="XML-IDs de res.groups separados por coma (p.ej. "
              "inventory_shopping_cart.group_price_authorizer). Solo quien pertenezca a "
              "alguno puede activar este tipo. Vacío = basta con poder leer el modelo.")
+    excluded_group_xmlids = fields.Char(
+        'Oculto para los grupos',
+        help="XML-IDs de res.groups separados por coma. Quien pertenezca a "
+             "alguno NO ve este tipo en el Centro ni recibe su aviso (salvo que "
+             "tenga alguno de los grupos de excepción).")
+    exclusion_bypass_group_xmlids = fields.Char(
+        'Excepción a la ocultación',
+        help="XML-IDs de res.groups: quien tenga alguno sí ve el tipo aunque "
+             "esté en un grupo oculto (p. ej. autorizador o administrador que "
+             "además es vendedor).")
     notice = fields.Boolean(
         'Aviso informativo', default=False,
         help="No hay nada que hacer: el Centro lo muestra con botón «Enterado» y "
@@ -208,6 +218,13 @@ class SomActivityKind(models.Model):
         ninguno existe, no está disponible). Sin grupos → basta leer el modelo."""
         self.ensure_one()
         env_user = self.env(user=user.id)
+        # Ocultación por grupo (27 sep 2026: «Actividades manuales» no es para
+        # vendedores): gana sobre todo lo demás, salvo los grupos de excepción.
+        excluded = [x.strip() for x in (self.excluded_group_xmlids or '').split(',') if x.strip()]
+        if excluded and any(env_user.ref(x, raise_if_not_found=False) and env_user.user.has_group(x) for x in excluded):
+            bypass = [x.strip() for x in (self.exclusion_bypass_group_xmlids or '').split(',') if x.strip()]
+            if not any(env_user.ref(x, raise_if_not_found=False) and env_user.user.has_group(x) for x in bypass):
+                return False
         xmlids = [x.strip() for x in (self.group_xmlids or '').split(',') if x.strip()]
         if xmlids:
             for xmlid in xmlids:
@@ -358,6 +375,11 @@ class MailActivity(models.Model):
             if not record.exists() or not hasattr(record, 'message_notify'):
                 continue
             kind = act.x_som_kind_id
+            # Tipo que el asignado no puede ver en su Centro (p. ej. manuales
+            # para vendedores): tampoco recibe el aviso.
+            visible_kind = kind or self.env['som.activity.kind'].sudo()._som_native_kind()
+            if visible_kind and not visible_kind._som_available_for(act.user_id):
+                continue
             kind_name = kind.name if kind else (act.activity_type_id.name or _('Actividad'))
             if kind.category == 'auth':
                 target = Hub._som_auth_target(act)[1]
@@ -989,7 +1011,9 @@ class SomActivityHub(models.AbstractModel):
                                                 order='id desc', limit=self.HISTORY_LIMIT)
         requested_closed = Activity.sudo().with_context(active_test=False).search(
             mine_domain + [('active', '=', False)], order='date_done desc, write_date desc, id desc', limit=self.HISTORY_LIMIT)
-        requests = self._group_requests(requested_open, requested_closed)
+        # Tipos que el usuario no puede ver tampoco aparecen en «Mis solicitudes».
+        can_see = lambda a: available.get(kind_id_of(a), True)
+        requests = self._group_requests(requested_open.filtered(can_see), requested_closed.filtered(can_see))
 
         # Catálogo para configurar: todos los tipos, con cuántas tiene el usuario.
         counts = {}
@@ -1016,7 +1040,10 @@ class SomActivityHub(models.AbstractModel):
             'user': {'id': user.id, 'name': user.name},
             'today': fields.Date.context_today(self).isoformat(),
             'pending': [self._activity_payload(a) for a in pending],
-            'hidden_pending': len(pending_all) - len(pending),
+            # «Ocultas por tu configuración» = solo las que el usuario apagó
+            # (las de tipos sin permiso no existen para él).
+            'hidden_pending': len(pending_all.filtered(
+                lambda a: available.get(kind_id_of(a), True) and kind_id_of(a) in disabled)),
             'native_kind_id': native_id,
             'history': [self._activity_payload(a, with_siblings=False) for a in history],
             'requests': requests,
