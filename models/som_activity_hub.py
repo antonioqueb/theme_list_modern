@@ -703,7 +703,10 @@ class SomActivityHub(models.AbstractModel):
     # Aprobar / Rechazar. Las decisiones corren con los permisos del
     # usuario: cada método de origen valida su grupo de autorizador.
     # ------------------------------------------------------------------
-    AUTH_KINDS = ('price_auth', 'discount_auth', 'iva_auth', 'delivery_auth')
+    # 'sample_auth' (27 sep 2026) usa el protocolo GENÉRICO: el modelo de la
+    # solicitud trae _som_auth_card() / _som_auth_decide() / _som_auth_is_pending()
+    # y el Centro no necesita saber nada más de él.
+    AUTH_KINDS = ('price_auth', 'discount_auth', 'iva_auth', 'delivery_auth', 'sample_auth')
 
     @api.model
     def _som_auth_target(self, act):
@@ -727,6 +730,8 @@ class SomActivityHub(models.AbstractModel):
             return ('discount' if key == 'discount_auth' else 'iva'), rec
         if key == 'delivery_auth' and rec._name == 'delivery.auth.request':
             return 'delivery', rec
+        if hasattr(rec, '_som_auth_card') and hasattr(rec, '_som_auth_decide'):
+            return 'generic', rec
         return False, None
 
     @api.model
@@ -741,6 +746,8 @@ class SomActivityHub(models.AbstractModel):
             return getattr(rec, 'x_iva_exempt_state', '') == 'requested'
         if atype == 'delivery':
             return rec.state == 'requested'
+        if atype == 'generic':
+            return bool(rec._som_auth_is_pending())
         return True
 
     @api.model
@@ -761,7 +768,7 @@ class SomActivityHub(models.AbstractModel):
                 continue
             decided |= act
             state_field = rec._fields.get('state')
-            if atype in ('price', 'delivery') and state_field and state_field.type == 'selection':
+            if atype in ('price', 'delivery', 'generic') and state_field and state_field.type == 'selection':
                 labels[act.id] = dict(state_field._description_selection(self.env)).get(rec.state, rec.state or '')
         # Como sistema: si no, el Historial diría que la cerró quien solo
         # abrió el Centro.
@@ -841,6 +848,14 @@ class SomActivityHub(models.AbstractModel):
                       ('Vendedor', rec.salesperson_id.name), ('Solicitó', rec.requested_by_id.name),
                       ('Total', self._som_money(rec.amount_total, cur)),
                       ('Saldo pendiente', self._som_money(rec.amount_residual, cur))]
+            elif atype == 'generic':
+                card = rec._som_auth_card() or {}
+                out['pending'] = bool(card.get('pending'))
+                F += [tuple(f) for f in card.get('fields') or []]
+                out['line_cols'] = card.get('line_cols') or []
+                out['lines'] = card.get('lines') or []
+                out['total'] = card.get('total') or ''
+                out['reject_needs_reason'] = bool(card.get('reject_needs_reason'))
             out['fields'] = [{'label': k, 'value': v} for k, v in F if v]
             return out
         except Exception:  # noqa: BLE001 — jamás tumbar el hub por una solicitud rara
@@ -893,6 +908,8 @@ class SomActivityHub(models.AbstractModel):
                 self.env['delivery.auth.reject.wizard'].create({
                     'request_id': rec.id, 'rejection_notes': note,
                 }).action_confirm_reject()
+        elif atype == 'generic':
+            rec._som_auth_decide(approve, note)
         if note and atype in ('discount', 'iva', 'delivery') and (approve or atype != 'delivery'):
             rec.message_post(body=Markup('<p><b>Comentario de %s:</b> %s</p>') % (
                 self.env.user.name, note))

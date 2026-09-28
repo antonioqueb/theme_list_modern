@@ -65,6 +65,19 @@ Re-autorizar precios</field>
         <field name="description">Entregas sin pago completo que requieren un aprobador.</field>
         <field name="group_xmlids">sale_delivery_auth.group_delivery_approver</field>
     </record>
+    <record id="kind_sample_auth" model="som.activity.kind">
+        <field name="key">sample_auth</field>
+        <field name="name">Autorizar muestra</field>
+        <field name="res_model">som.sample.request</field>
+        <field name="summary_prefixes">Autorizar muestra</field>
+        <field name="category">auth</field>
+        <field name="icon">fa-th-large</field>
+        <field name="color">#0b57d0</field>
+        <field name="sequence">45</field>
+        <field name="shared" eval="True"/>
+        <field name="description">Solicitudes de muestras (corte o entrega de placas) que consumen material y requieren autorización.</field>
+        <field name="group_xmlids">inventory_shopping_cart.group_price_authorizer</field>
+    </record>
     <record id="kind_floor_violation" model="som.activity.kind">
         <field name="key">floor_violation</field>
         <field name="name">Precio bajo lo autorizado</field>
@@ -396,6 +409,22 @@ Autorización Rechazada</field>
         <field name="notice" eval="True"/>
         <field name="notice_days">7</field>
         <field name="description">Aviso al solicitante y al vendedor: la entrega fue autorizada o rechazada.</field>
+        <field name="group_xmlids">sales_team.group_sale_salesman</field>
+    </record>
+
+    <record id="kind_sample_auth_result" model="som.activity.kind">
+        <field name="key">sample_auth_result</field>
+        <field name="name">Resultado de solicitud de muestras</field>
+        <field name="res_model">som.sample.request</field>
+        <field name="summary_prefixes">Muestra autorizada
+Muestra rechazada</field>
+        <field name="category">avisos</field>
+        <field name="icon">fa-th-large</field>
+        <field name="color">#5a6b7d</field>
+        <field name="sequence">55</field>
+        <field name="notice" eval="True"/>
+        <field name="notice_days">7</field>
+        <field name="description">Aviso al vendedor: su solicitud de muestras fue autorizada o rechazada.</field>
         <field name="group_xmlids">sales_team.group_sale_salesman</field>
     </record>
 
