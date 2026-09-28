@@ -283,7 +283,11 @@ Re-autorizar precios</field>
         <field name="description">Un embarque llegó a puerto: hay una recepción por procesar.</field>
         <field name="resolved_domain">[('state','in',['done','cancel'])]</field>
         <field name="resolved_label">La recepción ya se procesó.</field>
-        <field name="group_xmlids">stock.group_stock_user</field>
+        <!-- Torre de Control › Recepciones (o Usuario/Gerente de Tránsito,
+             que lo implican). Antes stock.group_stock_user: TODOS los
+             vendedores lo tienen y veían «Inventario y logística» en su
+             Configuración (27 sep 2026). -->
+        <field name="group_xmlids">stock_transit_allocation.group_transit_receptions</field>
     </record>
     <record id="kind_logistics_delivery" model="som.activity.kind">
         <field name="key">logistics_delivery</field>
@@ -314,6 +318,10 @@ Pago registrado</field>
         <field name="resolved_domain">['|',('x_expiry_seller_notified','=',False),('state','in',['done','cancel'])]</field>
         <field name="resolved_label">La reserva se renovó o se cerró.</field>
         <field name="group_xmlids">sales_team.group_sale_salesman</field>
+        <!-- Retirado (25 sep 2026): la reserva vencida ya solo se avisa por
+             correo al vendedor. Archivado para que no aparezca en la
+             Configuración de nadie. -->
+        <field name="active" eval="False"/>
     </record>
 
     <!-- ══════════ AVISOS DE VENTA (un solo destinatario) ══════════ -->
