@@ -474,6 +474,26 @@ Muestra rechazada</field>
         <field name="group_xmlids">som_whatsapp.group_whatsapp_manager</field>
     </record>
 
+    <!-- Taller confirmado → Logística entrega el material (30 sep 2026).
+         Lo agenda sale_stone_workshop_integration al confirmar una OT de
+         venta con material reservado en almacén; se cierra al validar el
+         traslado (Tablero de Salidas › A taller) o al iniciar/cerrar la OT. -->
+    <record id="kind_workshop_delivery" model="som.activity.kind">
+        <field name="key">workshop_delivery</field>
+        <field name="name">Entrega de material a taller</field>
+        <field name="res_model">workshop.order</field>
+        <field name="summary_prefixes">Entrega a taller</field>
+        <field name="category">inventario</field>
+        <field name="icon">fa-truck</field>
+        <field name="color">#7a5af8</field>
+        <field name="sequence">45</field>
+        <field name="shared" eval="True"/>
+        <field name="resolved_domain">[('state','in',('in_workshop','done','cancel'))]</field>
+        <field name="resolved_label">La orden de taller ya inició o se cerró.</field>
+        <field name="group_xmlids">sale_delivery_auth.group_delivery_logistics,sale_delivery_wizard.group_delivery_user</field>
+        <field name="description">El taller confirmó una orden con material reservado: imprime la recolección y entrégalo a taller desde Entregas › Salidas › «A taller».</field>
+    </record>
+
     <!-- ══════════ MANUALES: todo lo agendado a mano (sin prefijo, sin modelo) ══════════ -->
     <record id="kind_native" model="som.activity.kind">
         <field name="key">native</field>
